@@ -60,7 +60,12 @@ async function getXauUsdFromStooq(): Promise<ProviderResult> {
   const lines = text.trim().split(/\r?\n/);
   const last = lines.at(-1) ?? "";
   const parts = last.split(",");
-  const value = Number(parts.at(-1));
+  const closeValue = Number(parts[6]);
+  const fallbackValue = [...parts]
+    .reverse()
+    .map((part) => Number(part))
+    .find((part) => Number.isFinite(part) && part > 0);
+  const value = Number.isFinite(closeValue) && closeValue > 0 ? closeValue : fallbackValue;
   if (!value) throw new Error("Stooq XAU/USD response is missing a usable value.");
   return { provider: "stooq", value, meta: { raw: last } };
 }
