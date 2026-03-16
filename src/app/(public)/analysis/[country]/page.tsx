@@ -8,6 +8,8 @@ import { buildMetadata } from "@/lib/seo";
 import { formatQar } from "@/lib/utils";
 import { getMarketOverview } from "@/server/data/market";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ params }: { params: Promise<{ country: string }> }): Promise<Metadata> {
   const { country } = await params;
   return buildMetadata({
