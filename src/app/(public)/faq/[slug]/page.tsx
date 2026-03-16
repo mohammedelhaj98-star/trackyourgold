@@ -1,0 +1,1 @@
+export default function Page({params}:{params:{slug:string}}){return <main className="container-page"><h1 className="text-3xl font-semibold">FAQ: {params.slug}</h1><div className="card mt-4">FAQ schema-friendly page template.</div></main>}
