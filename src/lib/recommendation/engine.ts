@@ -1,3 +1,4 @@
+import type { RecommendationLabel } from '@prisma/client';
 import { recommendationDefaults } from '@/lib/config/appConfig';
 
 export type SignalInput = {
@@ -9,7 +10,15 @@ export type SignalInput = {
   premiumOverSpotPercent: number;
 };
 
-export function buildRecommendation(input: SignalInput) {
+export type RecommendationResult = {
+  label: RecommendationLabel;
+  score: number;
+  reasons: string[];
+  explanation: string;
+  confidenceNote: string;
+};
+
+export function buildRecommendation(input: SignalInput): RecommendationResult {
   const w = recommendationDefaults.weights;
   const t = recommendationDefaults.thresholds;
   let score = 50;
@@ -23,7 +32,7 @@ export function buildRecommendation(input: SignalInput) {
   if (input.premiumOverSpotPercent >= t.highPremiumPercent) { score += w.premiumOverSpotPenalty; reasons.push('Store premium over spot is wider than normal.'); }
 
   score = Math.max(0, Math.min(100, score));
-  const label = score >= 80 ? 'STRONG_BUY' : score >= 65 ? 'BUY' : score >= 40 ? 'WAIT' : 'AVOID';
+  const label: RecommendationLabel = score >= 80 ? 'STRONG_BUY' : score >= 65 ? 'BUY' : score >= 40 ? 'WAIT' : 'AVOID';
 
   return {
     label,

@@ -139,5 +139,5 @@ Example: `Demmahom@98` -> `Demmahom%4098`.
 
 
 ## Runtime requirements
-- Node.js 20.x
+- Node.js 20.x to 22.x (recommended: 20 LTS for Hostinger compatibility)
 - npm (project packageManager set to `npm@10`)
