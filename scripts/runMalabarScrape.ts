@@ -1,8 +1,8 @@
-import { env } from '@/lib/config/env';
+import { requireEnv } from '@/lib/config/env';
 import { scrapeMalabarHtml, parseMalabarRates, parserVersion } from '@/lib/scraping/malabar';
 
 async function main() {
-  const html = await scrapeMalabarHtml(env.MALABAR_URL);
+  const html = await scrapeMalabarHtml(requireEnv('MALABAR_URL'));
   const rates = parseMalabarRates(html);
   console.log(JSON.stringify({ parserVersion, count: rates.length, rates }, null, 2));
 }

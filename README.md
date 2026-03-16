@@ -111,3 +111,16 @@ See `docs/HOSTINGER_DEPLOYMENT.md` for full deployment + cron instructions.
 ## Product disclaimers
 Financial recommendation output is informational only. Use the reusable disclaimer component:
 - `src/components/shared/FinancialDisclaimer.tsx`
+
+## Build-time environment behavior
+`src/lib/config/env.ts` is designed to avoid hard-failing the Next.js build when optional runtime-only variables are missing. Variables required for specific runtime jobs (like scraping) are validated with `requireEnv(...)` at execution time.
+
+For production deployment, you must still define all required variables from `.env.example`.
+
+## Malabar source configuration
+- Price scraping source: `MALABAR_URL` (gold rate page).
+- Store-directory/reference source: `MALABAR_STORES_URL` (Qatar stores page).
+
+## Database URL safety
+If your MySQL password includes reserved URL characters (such as `@`), URL-encode them in `DATABASE_URL`.
+Example: `Demmahom@98` -> `Demmahom%4098`.

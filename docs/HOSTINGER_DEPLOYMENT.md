@@ -17,3 +17,9 @@ Set three cron jobs:
 - `5 * * * * cd ~/domains/trackyourgold.com/public_html && npm run recommendations:run`
 
 For reliability, redirect logs to files and monitor parser failures in admin logs.
+
+## Production values provided by owner
+- Malabar stores page (reference/store directory source):
+  - `https://www.malabargoldanddiamonds.com/stores/qatar`
+- If your DB password contains `@`, URL-encode it in `DATABASE_URL`.
+  - Example: `Demmahom@98` becomes `Demmahom%4098`

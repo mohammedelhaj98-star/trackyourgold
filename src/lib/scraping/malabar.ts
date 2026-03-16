@@ -1,3 +1,5 @@
+import { getEnv } from '@/lib/config/env';
+
 export const parserVersion = 'malabar-v1';
 
 export const malabarSelectors = {
@@ -6,6 +8,14 @@ export const malabarSelectors = {
   price: '.price-value',
   timestamp: '.updated-at',
 };
+
+export function getMalabarSources() {
+  const env = getEnv();
+  return {
+    ratePageUrl: env.MALABAR_URL,
+    storesPageUrl: env.MALABAR_STORES_URL,
+  };
+}
 
 export async function scrapeMalabarHtml(url: string) {
   const res = await fetch(url, { headers: { 'User-Agent': 'TrackYourGoldBot/1.0' }, cache: 'no-store' });
