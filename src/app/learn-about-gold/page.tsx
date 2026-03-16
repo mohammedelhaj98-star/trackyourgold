@@ -1,0 +1,1 @@
+export default function Page() { return <main className="container-page"><h1 className="text-3xl font-semibold">Gold Insights</h1><div className="card mt-4">Learn hub connecting guides, FAQs, articles, and tools.</div></main>; }
