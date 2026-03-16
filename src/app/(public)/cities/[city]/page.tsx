@@ -1,0 +1,1 @@
+export default function Page({params}:{params:{city:string}}){return <main className="container-page"><h1 className="text-3xl font-semibold">City page: {params.city}</h1><div className="card mt-4">Localized trends and related stores.</div></main>}

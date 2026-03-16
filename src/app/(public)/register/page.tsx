@@ -1,0 +1,1 @@
+export default function RegisterPage(){return <main className="container-page max-w-md"><h1 className="text-3xl font-semibold">Register</h1><div className="card mt-4">Registration form placeholder.</div></main>}
