@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 import { authorizeCron } from "@/lib/cron";
 import { evaluateAlertRules } from "@/server/services/alerts/alerts";

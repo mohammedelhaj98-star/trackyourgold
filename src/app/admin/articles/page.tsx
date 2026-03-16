@@ -1,4 +1,4 @@
-﻿import { ArticleEditor } from "@/components/admin/forms";
+import { ArticleEditor } from "@/components/admin/forms";
 import { buildMetadata } from "@/lib/seo";
 import { db } from "@/lib/db";
 

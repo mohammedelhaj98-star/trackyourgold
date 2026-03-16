@@ -1,4 +1,4 @@
-﻿const buckets = new Map<string, { count: number; resetAt: number }>();
+const buckets = new Map<string, { count: number; resetAt: number }>();
 
 export function consumeRateLimit(key: string, limit: number, windowMs: number) {
   const now = Date.now();

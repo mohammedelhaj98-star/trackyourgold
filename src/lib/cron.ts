@@ -1,4 +1,4 @@
-﻿import { env } from "@/lib/env";
+import { env } from "@/lib/env";
 
 export function authorizeCron(request: Request) {
   const bearer = request.headers.get("authorization");

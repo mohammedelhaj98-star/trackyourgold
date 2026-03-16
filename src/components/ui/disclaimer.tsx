@@ -1,4 +1,4 @@
-﻿import { Panel } from "@/components/ui/panel";
+import { Panel } from "@/components/ui/panel";
 
 export function FinancialDisclaimer() {
   return (

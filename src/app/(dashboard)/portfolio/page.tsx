@@ -1,4 +1,4 @@
-﻿import { PurchaseForm } from "@/components/dashboard/forms";
+import { PurchaseForm } from "@/components/dashboard/forms";
 import { PageViewTracker } from "@/components/layout/page-view-tracker";
 import { MetricCard } from "@/components/ui/metric-card";
 import { getCurrentUser } from "@/lib/auth/session";

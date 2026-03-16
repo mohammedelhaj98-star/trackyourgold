@@ -1,4 +1,4 @@
-﻿import { recommendationLabels } from "@/lib/constants";
+import { recommendationLabels } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export function RecommendationBadge({ label }: { label: keyof typeof recommendationLabels | string }) {

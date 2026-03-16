@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { MoonStar, SunMedium } from "lucide-react";
 import { useTheme } from "next-themes";

@@ -1,13 +1,9 @@
-﻿import { ImageResponse } from "@vercel/og";
+import { ImageResponse } from "@vercel/og";
 
 import { db } from "@/lib/db";
 import { decimalToNumber } from "@/lib/utils";
 
 export const runtime = "nodejs";
-export const size = {
-  width: 1200,
-  height: 630
-};
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -60,7 +56,8 @@ export async function GET(request: Request) {
       </div>
     ),
     {
-      ...size
+      width: 1200,
+      height: 630
     }
   );
 }

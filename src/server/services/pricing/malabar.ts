@@ -1,4 +1,4 @@
-﻿import "server-only";
+import "server-only";
 
 import * as cheerio from "cheerio";
 import { SnapshotStatus } from "@prisma/client";

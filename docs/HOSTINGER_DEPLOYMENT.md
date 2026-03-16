@@ -1,4 +1,4 @@
-﻿# Hostinger Deployment Guide
+# Hostinger Deployment Guide
 
 This app is designed for Hostinger Node.js Web App deployment.
 

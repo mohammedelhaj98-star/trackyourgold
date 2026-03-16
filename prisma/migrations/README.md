@@ -1,4 +1,4 @@
-﻿# Prisma Migrations
+# Prisma Migrations
 
 This repository currently uses `prisma/schema.prisma` as the committed source of truth.
 

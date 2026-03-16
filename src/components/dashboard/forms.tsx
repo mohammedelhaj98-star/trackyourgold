@@ -1,4 +1,4 @@
-﻿import { createAlertRuleAction, createPurchaseAction, saveAnalysisAction, toggleAdsSuppressionAction } from "@/server/actions/dashboard";
+import { createAlertRuleAction, createPurchaseAction, saveAnalysisAction, toggleAdsSuppressionAction } from "@/server/actions/dashboard";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 

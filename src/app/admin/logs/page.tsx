@@ -1,4 +1,4 @@
-﻿import { buildMetadata } from "@/lib/seo";
+import { buildMetadata } from "@/lib/seo";
 import { db } from "@/lib/db";
 
 export const metadata = buildMetadata({

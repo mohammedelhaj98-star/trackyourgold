@@ -1,4 +1,4 @@
-﻿# TrackYourGold
+# TrackYourGold
 
 TrackYourGold is a production-oriented full-stack web application for `trackyourgold.com`.
 

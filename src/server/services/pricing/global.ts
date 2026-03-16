@@ -1,6 +1,6 @@
-﻿import "server-only";
+import "server-only";
 
-import { SnapshotStatus } from "@prisma/client";
+import { Prisma, SnapshotStatus } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -132,7 +132,7 @@ export async function ingestGlobalMarketData() {
           rate: fx.value,
           capturedAt,
           status: SnapshotStatus.SUCCESS,
-          metadataJson: fx.meta
+          metadataJson: fx.meta ? (fx.meta as Prisma.InputJsonValue) : undefined
         }
       }),
       db.globalGoldPrice.create({
@@ -145,9 +145,9 @@ export async function ingestGlobalMarketData() {
           capturedAt,
           status: SnapshotStatus.SUCCESS,
           metadataJson: {
-            gold: gold.meta,
-            fx: fx.meta
-          }
+            gold: gold.meta ?? null,
+            fx: fx.meta ?? null
+          } as Prisma.InputJsonValue
         }
       }),
       db.systemLog.create({

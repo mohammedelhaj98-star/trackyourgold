@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 
 import { loginAction } from "@/server/actions/auth";
 import { buildMetadata } from "@/lib/seo";

@@ -1,4 +1,4 @@
-﻿export const siteConfig = {
+export const siteConfig = {
   name: "TrackYourGold",
   domain: "trackyourgold.com",
   description:

@@ -1,4 +1,4 @@
-﻿import { AdSlot } from "@/components/layout/ad-slot";
+import { AdSlot } from "@/components/layout/ad-slot";
 import { PageViewTracker } from "@/components/layout/page-view-tracker";
 import { PriceChart } from "@/components/charts/price-chart";
 import { AdsPreferenceForm } from "@/components/dashboard/forms";

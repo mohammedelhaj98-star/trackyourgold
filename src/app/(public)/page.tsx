@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 
 import { PriceChart } from "@/components/charts/price-chart";
 import { AdSlot } from "@/components/layout/ad-slot";

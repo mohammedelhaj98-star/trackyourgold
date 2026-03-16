@@ -1,4 +1,4 @@
-﻿export const MALABAR_SELECTOR_CONFIG = {
+export const MALABAR_SELECTOR_CONFIG = {
   rowSelectors: [
     "table tr",
     "[class*='gold'] tr",

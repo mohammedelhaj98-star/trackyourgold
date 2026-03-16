@@ -1,4 +1,4 @@
-﻿import { createArticleAction, createContentPageAction, updateAdSlotAction, updateSettingAction } from "@/server/actions/admin";
+import { createArticleAction, createContentPageAction, updateAdSlotAction, updateSettingAction } from "@/server/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 

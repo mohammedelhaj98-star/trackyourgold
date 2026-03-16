@@ -1,4 +1,4 @@
-﻿import type { PlanTier, User } from "@prisma/client";
+import type { PlanTier, User } from "@prisma/client";
 
 import { env } from "@/lib/env";
 

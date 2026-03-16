@@ -1,4 +1,4 @@
-﻿import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { shouldShowAds } from "@/lib/ads";
 import { cn } from "@/lib/utils";

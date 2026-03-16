@@ -1,4 +1,4 @@
-﻿import "server-only";
+import "server-only";
 
 import { ContentStatus } from "@prisma/client";
 

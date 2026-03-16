@@ -1,4 +1,4 @@
-﻿export type CalculatorDefinition = {
+export type CalculatorDefinition = {
   slug: string;
   title: string;
   description: string;

@@ -1,4 +1,4 @@
-﻿import { ArticleEditor, ContentPageEditor, SettingEditor } from "@/components/admin/forms";
+import { ArticleEditor, ContentPageEditor, SettingEditor } from "@/components/admin/forms";
 import { PageViewTracker } from "@/components/layout/page-view-tracker";
 import { MetricCard } from "@/components/ui/metric-card";
 import { buildMetadata } from "@/lib/seo";
