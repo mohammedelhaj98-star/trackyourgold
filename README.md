@@ -141,3 +141,11 @@ Example: `Demmahom@98` -> `Demmahom%4098`.
 ## Runtime requirements
 - Node.js 20.x to 22.x (recommended: 20 LTS for Hostinger compatibility)
 - npm (project packageManager set to `npm@10`)
+
+
+## Why data now appears immediately
+- Added a market data service with **database-or-demo fallback** (`src/lib/data/market.ts`).
+- Public gold pages and dashboard now render actual latest prices, premium-over-spot, and recommendation output.
+- If DB is empty or not configured, demo market data is shown so features are still usable.
+- If DB is configured, run `npm run prisma:seed` to populate initial price/global reference rows.
+- API endpoint for latest market payload: `GET /api/market/latest?countryCode=QA`.
