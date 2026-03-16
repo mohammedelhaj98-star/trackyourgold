@@ -1,0 +1,1 @@
+export default function BlogPage(){return <main className="container-page"><h1 className="text-3xl font-semibold">Blog & News</h1><div className="card mt-4">Article index with schedules and metadata support.</div></main>}

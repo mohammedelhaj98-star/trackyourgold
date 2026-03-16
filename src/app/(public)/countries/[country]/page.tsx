@@ -1,0 +1,1 @@
+export default function Page({params}:{params:{country:string}}){return <main className="container-page"><h1 className="text-3xl font-semibold">Country page: {params.country}</h1><div className="card mt-4">Country-city-store hierarchy page.</div></main>}

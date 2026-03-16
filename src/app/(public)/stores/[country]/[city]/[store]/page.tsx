@@ -1,0 +1,1 @@
+export default function Page({params}:{params:{country:string;city:string;store:string}}){return <main className="container-page"><h1 className="text-3xl font-semibold">Store: {params.store}</h1><div className="card mt-4">Store profile, rates, and affiliate-ready blocks.</div></main>}
