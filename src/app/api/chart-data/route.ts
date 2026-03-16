@@ -1,16 +1,26 @@
 import { NextResponse } from "next/server";
 
-import { db } from "@/lib/db";
-import { decimalToNumber } from "@/lib/utils";
-import { getRuntimePricePageData } from "@/server/services/pricing/runtime-public-cache";
+import { getRuntimePricePageData, refreshRuntimePublicMarketCache } from "@/server/services/pricing/runtime-public-cache";
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const countrySlug = searchParams.get("country") ?? "qatar";
-  const karat = searchParams.get("karat") ?? "22K";
+  try {
+    const { searchParams } = new URL(request.url);
+    const countrySlug = searchParams.get("country") ?? "qatar";
+    const karat = searchParams.get("karat") ?? "22K";
 
-  const runtime = await getRuntimePricePageData(countrySlug, karat);
-  if (runtime) {
+    let runtime = await getRuntimePricePageData(countrySlug, karat);
+    if (!runtime) {
+      const refreshed = await refreshRuntimePublicMarketCache(countrySlug);
+      runtime = refreshed?.pricePages[karat] ?? null;
+    }
+
+    if (!runtime) {
+      return NextResponse.json(
+        { ok: false, error: "Live chart data is temporarily unavailable." },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json({
       ok: true,
       country: runtime.country.slug,
@@ -20,26 +30,8 @@ export async function GET(request: Request) {
         pricePerGram: point.price
       }))
     });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown chart data failure.";
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
-
-  const country = await db.country.findUnique({ where: { slug: countrySlug } });
-  if (!country) {
-    return NextResponse.json({ ok: false, error: "Country not found." }, { status: 404 });
-  }
-
-  const series = await db.goldPriceSnapshot.findMany({
-    where: { countryId: country.id, karatLabel: karat },
-    orderBy: { capturedAt: "asc" },
-    take: 240
-  });
-
-  return NextResponse.json({
-    ok: true,
-    country: country.slug,
-    karat,
-    points: series.map((point) => ({
-      timestamp: point.capturedAt.toISOString(),
-      pricePerGram: decimalToNumber(point.pricePerGram)
-    }))
-  });
 }

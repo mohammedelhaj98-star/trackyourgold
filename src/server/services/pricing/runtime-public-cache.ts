@@ -31,6 +31,11 @@ const MAX_CHART_POINTS = 120;
 const MAX_RECOMMENDATION_POINTS = 90;
 const STALE_AFTER_MS = 35 * 60 * 1000;
 
+declare global {
+  // eslint-disable-next-line no-var
+  var __trackYourGoldRuntimePublicCache: RuntimePublicCache | undefined;
+}
+
 type RuntimeSeriesPoint = {
   timestamp: string;
   price: number;
@@ -84,16 +89,28 @@ function parseRuntimeCache(raw: string) {
 }
 
 async function loadRuntimeCache() {
+  if (global.__trackYourGoldRuntimePublicCache) {
+    return global.__trackYourGoldRuntimePublicCache;
+  }
+
   try {
-    return parseRuntimeCache(await readFile(CACHE_PATH, "utf8"));
+    const cache = parseRuntimeCache(await readFile(CACHE_PATH, "utf8"));
+    global.__trackYourGoldRuntimePublicCache = cache;
+    return cache;
   } catch {
     return null;
   }
 }
 
 async function saveRuntimeCache(cache: RuntimePublicCache) {
-  await mkdir(CACHE_DIR, { recursive: true });
-  await writeFile(CACHE_PATH, JSON.stringify(cache), "utf8");
+  global.__trackYourGoldRuntimePublicCache = cache;
+
+  try {
+    await mkdir(CACHE_DIR, { recursive: true });
+    await writeFile(CACHE_PATH, JSON.stringify(cache), "utf8");
+  } catch (error) {
+    console.error("[runtime-public-cache:save]", error);
+  }
 }
 
 function appendPoint<T extends { timestamp: string }>(items: T[], next: T) {

@@ -43,9 +43,94 @@ function parseTimestamp(text: string | undefined) {
   return candidate;
 }
 
+function parseQatarCountryTable($: cheerio.CheerioAPI) {
+  const table = $("table.table_othercountry").first();
+  if (!table.length) {
+    return null;
+  }
+
+  const rows = table.find("tr").toArray();
+  if (!rows.length) {
+    return null;
+  }
+
+  const headerCells = $(rows[0])
+    .find("td, th")
+    .toArray()
+    .map((cell) => $(cell).text().replace(/\s+/g, " ").trim());
+  const karatHeaders = headerCells
+    .slice(1)
+    .map((cell) => normalizeKaratLabel(cell))
+    .filter(Boolean);
+  const rates: ParsedKaratRate[] = [];
+  let sourceTimestamp: Date | null = null;
+
+  for (let index = 1; index < rows.length; index += 1) {
+    const row = rows[index];
+    const cells = $(row).find("td").toArray();
+    if (cells.length < 3) {
+      continue;
+    }
+
+    const rowText = cells.map((cell) => $(cell).text().replace(/\s+/g, " ").trim()).join(" ");
+    const countryLabel = $(cells[0]).text().replace(/\s+/g, " ").trim();
+    const isQatarRow = /qatar/i.test(countryLabel) || /QAR/i.test(rowText);
+    if (!isQatarRow) {
+      continue;
+    }
+
+    rates.length = 0;
+
+    for (let cellIndex = 1; cellIndex < cells.length; cellIndex += 1) {
+      const cellText = $(cells[cellIndex]).text().replace(/\s+/g, " ").trim();
+      const karatLabel = karatHeaders[cellIndex - 1] ?? normalizeKaratLabel(cellText);
+      const numeric = Number(cellText.match(/([0-9]+(?:\.[0-9]+)?)/)?.[1]);
+      const currencyCode = cellText.match(/\b([A-Z]{3})\b/)?.[1] ?? "QAR";
+
+      if (!karatLabel || !numeric || Number.isNaN(numeric)) {
+        continue;
+      }
+
+      rates.push({
+        karatLabel,
+        purityPct: inferPurity(karatLabel),
+        currencyCode,
+        pricePerGram: numeric
+      });
+    }
+
+    const nextRowText = $(rows[index + 1] ?? [])
+      .find("td")
+      .toArray()
+      .map((cell) => $(cell).text().replace(/\s+/g, " ").trim())
+      .join(" ");
+    sourceTimestamp = parseTimestamp(nextRowText) ?? sourceTimestamp;
+    break;
+  }
+
+  if (!rates.length) {
+    return null;
+  }
+
+  return {
+    rates: rates.filter((rate) => rate.currencyCode === "QAR"),
+    sourceTimestamp
+  };
+}
+
 export function parseMalabarHtml(html: string): ParsedMalabarPage {
   const $ = cheerio.load(html);
   const diagnostics: string[] = [];
+
+  const tableResult = parseQatarCountryTable($);
+  if (tableResult?.rates.length) {
+    return {
+      rates: tableResult.rates.sort((a, b) => a.karatLabel.localeCompare(b.karatLabel, undefined, { numeric: true })),
+      sourceTimestamp: tableResult.sourceTimestamp,
+      diagnostics
+    };
+  }
+
   const results = new Map<string, ParsedKaratRate>();
 
   for (const selector of MALABAR_SELECTOR_CONFIG.rowSelectors) {
