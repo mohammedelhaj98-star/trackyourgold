@@ -1,0 +1,628 @@
+﻿generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum PlanTier {
+  FREE
+  PREMIUM
+}
+
+enum SnapshotStatus {
+  SUCCESS
+  FAILED
+  PARTIAL
+}
+
+enum SourceKind {
+  STORE
+  GLOBAL_SPOT
+  FX
+}
+
+enum RecommendationLabel {
+  STRONG_BUY
+  BUY
+  WAIT
+  AVOID
+}
+
+enum AlertType {
+  PRICE_DROP
+  NEW_90_DAY_LOW
+  WEEKLY_SUMMARY
+}
+
+enum AdSlotType {
+  DESKTOP_SIDEBAR
+  FOOTER_BANNER
+  DASHBOARD_INLINE
+}
+
+enum ContentPageType {
+  LANDING
+  GUIDE
+  FAQ
+  CALCULATOR
+  MARKET_ANALYSIS
+  COUNTRY
+  CITY
+  STORE_COMPARISON
+  KARAT
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+}
+
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+}
+
+model User {
+  id               String              @id @default(cuid())
+  email            String              @unique
+  passwordHash     String
+  name             String?
+  role             UserRole            @default(USER)
+  plan             PlanTier            @default(FREE)
+  adsSuppressed    Boolean             @default(true)
+  emailVerifiedAt  DateTime?
+  countryId        String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  country          Country?            @relation(fields: [countryId], references: [id])
+  sessions         Session[]
+  alertRules       AlertRule[]
+  alertEvents      AlertEvent[]
+  purchases        Purchase[]
+  blogArticles     BlogArticle[]       @relation("ArticleAuthor")
+  internalAnalytics InternalAnalytics[]
+  affiliateClicks  AffiliateClick[]
+  adminAuditLogs   AdminAuditLog[]     @relation("AuditAdmin")
+  savedAnalyses    SavedAnalysis[]
+  updatedSettings  Setting[]           @relation("SettingUpdater")
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  ipAddress  String?
+  userAgent  String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Country {
+  id                 String               @id @default(cuid())
+  code               String               @unique
+  slug               String               @unique
+  name               String
+  currencyCode       String
+  timezone           String
+  isActive           Boolean              @default(true)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  users              User[]
+  cities             City[]
+  stores             Store[]
+  goldPriceSnapshots GoldPriceSnapshot[]
+  globalGoldPrices   GlobalGoldPrice[]
+  exchangeRates      ExchangeRate[]
+  recommendations    Recommendation[]
+  alertRules         AlertRule[]
+  alertEvents        AlertEvent[]
+  emailSubscribers   EmailSubscriber[]
+  newsletterSignups  NewsletterSignup[]
+  purchases          Purchase[]
+  contentPages       ContentPage[]
+  blogArticles       BlogArticle[]
+  faqs               Faq[]
+  internalAnalytics  InternalAnalytics[]
+  affiliateClicks    AffiliateClick[]
+  savedAnalyses      SavedAnalysis[]
+}
+
+model City {
+  id           String        @id @default(cuid())
+  countryId    String
+  slug         String
+  name         String
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  country      Country       @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  stores       Store[]
+  contentPages ContentPage[]
+
+  @@unique([countryId, slug])
+}
+
+model Store {
+  id                   String               @id @default(cuid())
+  countryId            String
+  cityId               String?
+  slug                 String
+  name                 String
+  brand                String?
+  externalUrl          String?
+  description          String?              @db.Text
+  isPrimarySource      Boolean              @default(false)
+  affiliateBaseUrl     String?
+  affiliateDisclosure  String?              @db.Text
+  rating               Float?
+  metaJson             Json?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  country              Country              @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  city                 City?                @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  snapshots            GoldPriceSnapshot[]
+  rawScrapeSnapshots   RawScrapeSnapshot[]
+  affiliateLinks       StoreAffiliateLink[]
+  parserFailures       ParserFailure[]
+  contentPages         ContentPage[]
+  purchases            Purchase[]
+  affiliateClicks      AffiliateClick[]
+
+  @@unique([countryId, slug])
+  @@index([cityId])
+}
+
+model StoreAffiliateLink {
+  id          String           @id @default(cuid())
+  storeId     String
+  localeCode  String?
+  label       String
+  url         String
+  network     String?
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  store       Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  clickEvents AffiliateClick[]
+
+  @@index([storeId])
+}
+
+model RawScrapeSnapshot {
+  id               String               @id @default(cuid())
+  storeId          String
+  url              String
+  html             String               @db.LongText
+  status           SnapshotStatus
+  parserVersion    String
+  sourceTimestamp  DateTime?
+  scrapeTimestamp  DateTime
+  detectedKarats   Json?
+  notes            String?              @db.Text
+  createdAt        DateTime             @default(now())
+  store            Store                @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  parserFailures   ParserFailure[]
+  snapshots        GoldPriceSnapshot[]
+
+  @@index([storeId, createdAt])
+}
+
+model GoldPriceSnapshot {
+  id                String              @id @default(cuid())
+  countryId         String
+  storeId           String?
+  rawSnapshotId     String?
+  sourceKind        SourceKind          @default(STORE)
+  karatLabel        String
+  purityPct         Float?
+  metricUnit        String              @default("gram")
+  currencyCode      String
+  pricePerGram      Decimal             @db.Decimal(12, 4)
+  sourceTimestamp   DateTime?
+  scrapeTimestamp   DateTime?
+  capturedAt        DateTime
+  parserVersion     String?
+  scrapeStatus      SnapshotStatus      @default(SUCCESS)
+  isStale           Boolean             @default(false)
+  metadataJson      Json?
+  createdAt         DateTime            @default(now())
+  country           Country             @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  store             Store?              @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  rawSnapshot       RawScrapeSnapshot?  @relation(fields: [rawSnapshotId], references: [id], onDelete: SetNull)
+  recommendations   Recommendation[]
+
+  @@index([countryId, karatLabel, capturedAt])
+  @@index([storeId, capturedAt])
+  @@index([sourceKind, capturedAt])
+}
+
+model GlobalGoldPrice {
+  id                    String      @id @default(cuid())
+  countryId             String
+  provider              String
+  symbol                String      @default("XAU/USD")
+  priceUsdPerTroyOunce  Decimal     @db.Decimal(12, 4)
+  qarPerGramEstimate    Decimal     @db.Decimal(12, 4)
+  capturedAt            DateTime
+  status                SnapshotStatus @default(SUCCESS)
+  metadataJson          Json?
+  createdAt             DateTime    @default(now())
+  country               Country     @relation(fields: [countryId], references: [id], onDelete: Cascade)
+
+  @@index([countryId, capturedAt])
+}
+
+model ExchangeRate {
+  id            String          @id @default(cuid())
+  countryId     String
+  provider      String
+  baseCurrency  String
+  quoteCurrency String
+  rate          Decimal         @db.Decimal(18, 8)
+  capturedAt    DateTime
+  status        SnapshotStatus  @default(SUCCESS)
+  metadataJson  Json?
+  createdAt     DateTime        @default(now())
+  country       Country         @relation(fields: [countryId], references: [id], onDelete: Cascade)
+
+  @@index([countryId, baseCurrency, quoteCurrency, capturedAt])
+}
+
+model Recommendation {
+  id                 String                 @id @default(cuid())
+  countryId          String
+  snapshotId         String
+  karatLabel         String
+  label              RecommendationLabel
+  score              Int
+  confidenceBand     String
+  explanation        String                 @db.Text
+  summaryText        String?                @db.Text
+  modelVersion       String
+  premiumVsSpot      Decimal?               @db.Decimal(12, 4)
+  change24h          Decimal?               @db.Decimal(12, 4)
+  change7d           Decimal?               @db.Decimal(12, 4)
+  priceVs30d         Decimal?               @db.Decimal(12, 4)
+  priceVs90d         Decimal?               @db.Decimal(12, 4)
+  createdAt          DateTime               @default(now())
+  country            Country                @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  snapshot           GoldPriceSnapshot      @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  reasons            RecommendationReason[]
+
+  @@index([countryId, karatLabel, createdAt])
+  @@index([snapshotId])
+}
+
+model RecommendationReason {
+  id                String           @id @default(cuid())
+  recommendationId  String
+  code              String
+  weight            Float
+  value             Float
+  direction         String
+  reason            String
+  createdAt         DateTime         @default(now())
+  recommendation    Recommendation   @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+
+  @@index([recommendationId])
+}
+
+model AlertRule {
+  id                String      @id @default(cuid())
+  userId            String
+  countryId         String
+  karatLabel        String?
+  type              AlertType
+  percentThreshold  Float?
+  comparisonDays    Int?
+  emailEnabled      Boolean     @default(true)
+  dashboardEnabled  Boolean     @default(true)
+  summaryFrequency  String?
+  cooldownMinutes   Int         @default(720)
+  isActive          Boolean     @default(true)
+  settingsJson      Json?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  country           Country     @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  events            AlertEvent[]
+
+  @@index([userId, type])
+  @@index([countryId, karatLabel])
+}
+
+model AlertEvent {
+  id            String      @id @default(cuid())
+  userId        String?
+  ruleId        String?
+  countryId     String
+  karatLabel    String?
+  type          AlertType
+  title         String
+  body          String      @db.Text
+  status        String      @default("pending")
+  dedupeKey     String?     @unique
+  deliveredAt   DateTime?
+  createdAt     DateTime    @default(now())
+  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  rule          AlertRule?  @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  country       Country     @relation(fields: [countryId], references: [id], onDelete: Cascade)
+
+  @@index([countryId, type, createdAt])
+}
+
+model EmailSubscriber {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  sourcePage    String?
+  countryId     String?
+  tagsJson      Json?
+  confirmedAt   DateTime?
+  userId        String?
+  createdAt     DateTime  @default(now())
+  country       Country?  @relation(fields: [countryId], references: [id], onDelete: SetNull)
+
+  @@index([countryId])
+}
+
+model NewsletterSignup {
+  id            String    @id @default(cuid())
+  email         String
+  sourcePage    String?
+  segment       String?
+  countryId     String?
+  createdAt     DateTime  @default(now())
+  country       Country?  @relation(fields: [countryId], references: [id], onDelete: SetNull)
+
+  @@unique([email, segment])
+}
+
+model Purchase {
+  id             String    @id @default(cuid())
+  userId         String
+  countryId      String
+  storeId        String?
+  storeName      String?
+  karatLabel     String
+  grams          Decimal   @db.Decimal(12, 4)
+  pricePerGram   Decimal   @db.Decimal(12, 4)
+  totalPaid      Decimal   @db.Decimal(12, 4)
+  makingCharge   Decimal   @default(0) @db.Decimal(12, 4)
+  purchasedAt    DateTime
+  notes          String?   @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  country        Country   @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  store          Store?    @relation(fields: [storeId], references: [id], onDelete: SetNull)
+
+  @@index([userId, purchasedAt])
+}
+
+model AdSlot {
+  id                     String     @id @default(cuid())
+  key                    String     @unique
+  name                   String
+  type                   AdSlotType
+  locationPath           String?
+  isEnabled              Boolean    @default(true)
+  placeholderMode        Boolean    @default(true)
+  provider               String?
+  adsenseClient          String?
+  adsenseSlot            String?
+  customCode             String?    @db.LongText
+  placeholderTitle       String?
+  placeholderDescription String?    @db.Text
+  adminNotes             String?    @db.Text
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+}
+
+model ContentPage {
+  id               String           @id @default(cuid())
+  countryId        String?
+  cityId           String?
+  storeId          String?
+  type             ContentPageType
+  slug             String           @unique
+  localeKey        String?
+  title            String
+  summary          String?          @db.Text
+  intro            String?          @db.Text
+  body             String           @db.LongText
+  status           ContentStatus    @default(DRAFT)
+  publishAt        DateTime?
+  heroMetricLabel  String?
+  faqJson          Json?
+  relatedLinksJson Json?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  country          Country?         @relation(fields: [countryId], references: [id], onDelete: SetNull)
+  city             City?            @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  store            Store?           @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  seoMetadata      SeoMetadata?
+
+  @@index([type, publishAt])
+}
+
+model BlogArticle {
+  id               String           @id @default(cuid())
+  authorId         String?
+  countryId        String?
+  slug             String           @unique
+  title            String
+  excerpt          String           @db.Text
+  coverImage       String?
+  body             String           @db.LongText
+  category         String?
+  tagsJson         Json?
+  faqJson          Json?
+  relatedLinksJson Json?
+  status           ContentStatus    @default(DRAFT)
+  publishedAt      DateTime?
+  scheduledAt      DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  author           User?            @relation("ArticleAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  country          Country?         @relation(fields: [countryId], references: [id], onDelete: SetNull)
+  seoMetadata      SeoMetadata?
+
+  @@index([status, publishedAt])
+}
+
+model Faq {
+  id            String       @id @default(cuid())
+  countryId     String?
+  slug          String       @unique
+  question      String
+  answer        String       @db.Text
+  category      String?
+  sortOrder     Int          @default(0)
+  isPublished   Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  country       Country?     @relation(fields: [countryId], references: [id], onDelete: SetNull)
+  seoMetadata   SeoMetadata?
+
+  @@index([countryId, category, sortOrder])
+}
+
+model SeoMetadata {
+  id                  String     @id @default(cuid())
+  contentPageId       String?    @unique
+  blogArticleId       String?    @unique
+  faqId               String?    @unique
+  title               String
+  description         String     @db.Text
+  canonicalUrl        String?
+  ogTitle             String?
+  ogDescription       String?    @db.Text
+  ogImageUrl          String?
+  twitterTitle        String?
+  twitterDescription  String?    @db.Text
+  schemaType          String?
+  schemaJson          Json?
+  robots              String     @default("index,follow")
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  contentPage         ContentPage? @relation(fields: [contentPageId], references: [id], onDelete: Cascade)
+  blogArticle         BlogArticle? @relation(fields: [blogArticleId], references: [id], onDelete: Cascade)
+  faq                 Faq?         @relation(fields: [faqId], references: [id], onDelete: Cascade)
+}
+
+model InternalAnalytics {
+  id            String    @id @default(cuid())
+  path          String
+  routeType     String
+  eventType     String
+  countryId     String?
+  sourcePage    String?
+  referrer      String?
+  userId        String?
+  metadataJson  Json?
+  createdAt     DateTime  @default(now())
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  country       Country?  @relation(fields: [countryId], references: [id], onDelete: SetNull)
+
+  @@index([path, createdAt])
+  @@index([eventType, createdAt])
+}
+
+model AffiliateClick {
+  id            String               @id @default(cuid())
+  affiliateLinkId String?
+  storeId       String?
+  pagePath      String
+  localeCode    String?
+  userId        String?
+  countryId     String?
+  outboundUrl   String
+  clickedAt     DateTime             @default(now())
+  metadataJson  Json?
+  affiliateLink StoreAffiliateLink?  @relation(fields: [affiliateLinkId], references: [id], onDelete: SetNull)
+  store         Store?               @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  user          User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  country       Country?             @relation(fields: [countryId], references: [id], onDelete: SetNull)
+
+  @@index([pagePath, clickedAt])
+}
+
+model SystemLog {
+  id           String    @id @default(cuid())
+  level        LogLevel
+  category     String
+  message      String    @db.Text
+  metadataJson Json?
+  createdAt    DateTime  @default(now())
+
+  @@index([category, createdAt])
+}
+
+model ParserFailure {
+  id              String             @id @default(cuid())
+  storeId         String
+  parserVersion   String
+  message         String             @db.Text
+  selectorKey     String?
+  htmlSnapshotId  String?
+  recoveredAt     DateTime?
+  createdAt       DateTime           @default(now())
+  store           Store              @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  htmlSnapshot    RawScrapeSnapshot? @relation(fields: [htmlSnapshotId], references: [id], onDelete: SetNull)
+
+  @@index([storeId, createdAt])
+}
+
+model Setting {
+  id            String    @id @default(cuid())
+  key           String    @unique
+  groupName     String
+  value         String    @db.LongText
+  valueType     String
+  description   String?   @db.Text
+  updatedById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  updatedBy     User?     @relation("SettingUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+}
+
+model AdminAuditLog {
+  id           String    @id @default(cuid())
+  adminId      String
+  action       String
+  entityType   String
+  entityId     String?
+  detailsJson  Json?
+  createdAt    DateTime  @default(now())
+  admin        User      @relation("AuditAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, createdAt])
+}
+
+model SavedAnalysis {
+  id            String    @id @default(cuid())
+  userId        String
+  countryId     String
+  karatLabel    String
+  note          String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  country       Country   @relation(fields: [countryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, countryId, karatLabel])
+}

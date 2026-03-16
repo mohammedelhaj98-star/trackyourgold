@@ -1,0 +1,99 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(185, 137, 30, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(67, 198, 190, 0.16), transparent 22%),
+    linear-gradient(180deg, #070b14 0%, #0c1220 55%, #11192a 100%);
+  color: white;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(circle at center, black, transparent 78%);
+  z-index: -1;
+}
+
+.dark body {
+  color-scheme: dark;
+}
+
+.light body {
+  color-scheme: light;
+  background:
+    radial-gradient(circle at top left, rgba(185, 137, 30, 0.16), transparent 28%),
+    radial-gradient(circle at top right, rgba(34, 156, 149, 0.12), transparent 24%),
+    linear-gradient(180deg, #f6f1e6 0%, #f3f5fb 48%, #e5edf8 100%);
+  color: #101828;
+}
+
+.light .bg-base-950\/80,
+.light .bg-base-950\/85,
+.light .bg-base-950\/90 {
+  background-color: rgba(243, 245, 251, 0.9);
+}
+
+.light .text-white,
+.light .text-white\/95,
+.light .text-white\/90,
+.light .text-white\/80,
+.light .text-white\/75,
+.light .text-white\/70,
+.light .text-white\/65,
+.light .text-white\/60,
+.light .text-white\/45,
+.light .text-white\/40,
+.light .text-amber-50\/80 {
+  color: #162033;
+}
+
+.light .border-white\/8,
+.light .border-white\/10,
+.light .border-white\/12 {
+  border-color: rgba(17, 25, 42, 0.12);
+}
+
+.light .bg-white\/\[0\.04\],
+.light .bg-white\/5,
+.light .bg-white\/\[0\.06\],
+.light .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.55);
+}
+
+.font-display {
+  font-family: var(--font-space-grotesk), sans-serif;
+}
+
+.font-body {
+  font-family: var(--font-manrope), sans-serif;
+}
+
+input,
+textarea,
+select {
+  color-scheme: dark;
+}
+
+.light input,
+.light textarea,
+.light select {
+  color-scheme: light;
+}
