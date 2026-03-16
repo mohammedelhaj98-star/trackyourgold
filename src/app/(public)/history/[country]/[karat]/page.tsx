@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { PriceChart } from "@/components/charts/price-chart";
 import { PageViewTracker } from "@/components/layout/page-view-tracker";
+import { DataUnavailableState } from "@/components/ui/data-unavailable-state";
 import { FinancialDisclaimer } from "@/components/ui/disclaimer";
 import { MetricCard } from "@/components/ui/metric-card";
 import { RecommendationBadge } from "@/components/ui/recommendation-badge";
@@ -26,7 +27,19 @@ export default async function HistoryPage({ params }: { params: Promise<{ countr
   const { country, karat } = await params;
   const karatLabel = decodeURIComponent(karat);
   const data = await getHistoryPageData(country, karatLabel);
-  if (!data) notFound();
+  if (!data) {
+    return (
+      <DataUnavailableState
+        eyebrow="History unavailable"
+        title={`${karatLabel} history data is temporarily unavailable.`}
+        description="This route is online, but the historical database query could not complete. Once the production database credentials are fixed, historical charts and recommendation history will repopulate automatically."
+        primaryHref={`/live/${country}/${karat}`}
+        primaryLabel="Open live page"
+        secondaryHref="/"
+        secondaryLabel="Return home"
+      />
+    );
+  }
 
   const globalSeries = await db.globalGoldPrice.findMany({
     where: { countryId: data.country.id },

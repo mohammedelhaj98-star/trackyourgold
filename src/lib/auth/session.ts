@@ -48,10 +48,17 @@ export const getCurrentSession = cache(async () => {
 
   if (!sessionToken) return null;
 
-  const session = await db.session.findUnique({
-    where: { tokenHash: hashToken(sessionToken) },
-    include: { user: true }
-  });
+  let session = null;
+
+  try {
+    session = await db.session.findUnique({
+      where: { tokenHash: hashToken(sessionToken) },
+      include: { user: true }
+    });
+  } catch (error) {
+    console.error("[auth:getCurrentSession]", error);
+    return null;
+  }
 
   if (!session || session.expiresAt < new Date()) {
     if (session) {

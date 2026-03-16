@@ -5,6 +5,7 @@ import { AdSlot } from "@/components/layout/ad-slot";
 import { PageViewTracker } from "@/components/layout/page-view-tracker";
 import { LeadCaptureForm } from "@/components/forms/lead-capture-form";
 import { FinancialDisclaimer } from "@/components/ui/disclaimer";
+import { DataUnavailableState } from "@/components/ui/data-unavailable-state";
 import { InternalLinksGrid } from "@/components/ui/internal-links-grid";
 import { MetricCard } from "@/components/ui/metric-card";
 import { RecommendationBadge } from "@/components/ui/recommendation-badge";
@@ -21,7 +22,17 @@ export default async function HomePage() {
   ]);
 
   if (!overview || !featured) {
-    return null;
+    return (
+      <DataUnavailableState
+        eyebrow="Live data unavailable"
+        title="TrackYourGold is online, but the market database is temporarily unavailable."
+        description="Public pages remain reachable while we restore the live pricing connection. Login and registration still work, and the protected setup route can be used once the production database credentials are corrected."
+        primaryHref="/login"
+        primaryLabel="Open login"
+        secondaryHref="/register"
+        secondaryLabel="Create account"
+      />
+    );
   }
 
   return (

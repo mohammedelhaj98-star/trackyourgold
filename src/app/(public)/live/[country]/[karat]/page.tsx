@@ -5,6 +5,7 @@ import { AdSlot } from "@/components/layout/ad-slot";
 import { PageViewTracker } from "@/components/layout/page-view-tracker";
 import { PriceChart } from "@/components/charts/price-chart";
 import { LeadCaptureForm } from "@/components/forms/lead-capture-form";
+import { DataUnavailableState } from "@/components/ui/data-unavailable-state";
 import { FinancialDisclaimer } from "@/components/ui/disclaimer";
 import { InternalLinksGrid } from "@/components/ui/internal-links-grid";
 import { MetricCard } from "@/components/ui/metric-card";
@@ -32,7 +33,19 @@ export default async function LiveGoldPricePage({ params }: { params: Promise<{ 
   const { country, karat } = await params;
   const karatLabel = decodeURIComponent(karat);
   const data = await getPricePageData(country, karatLabel);
-  if (!data) notFound();
+  if (!data) {
+    return (
+      <DataUnavailableState
+        eyebrow="Live rate unavailable"
+        title={`${karatLabel} gold price data is temporarily unavailable.`}
+        description="TrackYourGold could not reach the production market database for this page. The route stays online so the site remains navigable while the database connection is restored."
+        primaryHref="/"
+        primaryLabel="Return home"
+        secondaryHref="/login"
+        secondaryLabel="Open login"
+      />
+    );
+  }
 
   const faqItems = data.seoSections.faqs.map((faq) => ({ question: faq.question, answer: faq.answer }));
 

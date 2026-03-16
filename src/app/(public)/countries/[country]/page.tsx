@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { PageViewTracker } from "@/components/layout/page-view-tracker";
+import { DataUnavailableState } from "@/components/ui/data-unavailable-state";
 import { InternalLinksGrid } from "@/components/ui/internal-links-grid";
 import { MetricCard } from "@/components/ui/metric-card";
 import { buildMetadata } from "@/lib/seo";
@@ -20,7 +21,19 @@ export async function generateMetadata({ params }: { params: Promise<{ country: 
 export default async function CountryPage({ params }: { params: Promise<{ country: string }> }) {
   const { country } = await params;
   const data = await getCountryHubData(country);
-  if (!data || !data.overview) notFound();
+  if (!data || !data.overview) {
+    return (
+      <DataUnavailableState
+        eyebrow="Country hub unavailable"
+        title={`The ${country} country hub is temporarily unavailable.`}
+        description="This page depends on live country, city, and store data from the production database. The route will recover automatically once the database connection is restored."
+        primaryHref="/"
+        primaryLabel="Return home"
+        secondaryHref="/login"
+        secondaryLabel="Open login"
+      />
+    );
+  }
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-12 px-6 py-10 lg:px-8 lg:py-16">
