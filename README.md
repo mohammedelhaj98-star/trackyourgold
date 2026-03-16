@@ -136,3 +136,8 @@ Example: `Demmahom@98` -> `Demmahom%4098`.
 - **Shareable branded chart image**: `GET /api/share/chart` now returns a TrackYourGold-branded SVG image suitable for social sharing.
 - **Working calculator pages**: `/calculators/[slug]` includes interactive calculation logic for all required calculator slugs.
 - **Portfolio tracker logic**: dashboard portfolio page now computes cost basis, holdings, and unrealized P/L interactively.
+
+
+## Runtime requirements
+- Node.js 20.x
+- npm (project packageManager set to `npm@10`)

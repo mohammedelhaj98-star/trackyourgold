@@ -9,7 +9,7 @@ const defaultSettings = {
   recommendationDefaults,
 };
 
-function toInputJsonValue(value: unknown): Prisma.InputJsonValue | Prisma.JsonNull {
+function toInputJsonValue(value: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNull {
   if (value === null) return Prisma.JsonNull;
   return value as Prisma.InputJsonValue;
 }
