@@ -9,6 +9,17 @@ const FX_RATE = 3.64;
 const TOTAL_POINTS = 210;
 const HOURS_PER_POINT = 12;
 
+async function shouldSkipSeed() {
+  if (process.env.FORCE_SEED_RESET === "true") return false;
+
+  const existingCountry = await prisma.country.findUnique({
+    where: { slug: "qatar" },
+    select: { id: true }
+  });
+
+  return Boolean(existingCountry);
+}
+
 function asDecimal(value: number) {
   return value.toFixed(4);
 }
@@ -166,6 +177,11 @@ async function clearDatabase() {
 }
 
 async function main() {
+  if (await shouldSkipSeed()) {
+    console.log("Seed skipped. Core data already exists. Set FORCE_SEED_RESET=true to rebuild bootstrap data.");
+    return;
+  }
+
   await clearDatabase();
 
   const adminEmail = process.env.ADMIN_EMAIL ?? "admin@trackyourgold.com";

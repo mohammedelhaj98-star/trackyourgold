@@ -145,6 +145,8 @@ Seeded accounts:
 - Admin password comes from `ADMIN_PASSWORD`
 - Demo user: `demo@trackyourgold.com` / `DemoUser123!`
 
+The seed is deployment-safe by default. If the core `qatar` dataset already exists, the seed exits without modifying production data. To intentionally rebuild the bootstrap dataset, set `FORCE_SEED_RESET=true` before running `npm run db:seed`.
+
 ## Environment Notes
 
 If your MySQL password contains special characters like `@`, Prisma can require URL encoding depending on the parser and shell path. For example, `Demmahom@98` can be written as `Demmahom%4098` if needed.
@@ -308,4 +310,4 @@ The repository includes the Prisma schema and seed data. In this workspace I was
 
 - `npx prisma migrate dev --name init`
 
-For Hostinger deployment, `npm run db:push` is also documented as the simplest initial schema sync path.
+For Hostinger deployment, the `build` script runs Prisma generate, schema sync, idempotent seed, and the Next.js production build in one deploy step. The seed skips automatically after first initialization unless `FORCE_SEED_RESET=true` is set.
