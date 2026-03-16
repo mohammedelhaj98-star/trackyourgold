@@ -5,6 +5,8 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { buildMetadata } from "@/lib/seo";
 import { getContentHubData } from "@/server/data/market";
 
+export const revalidate = 1800;
+
 export const metadata = buildMetadata({
   title: "Gold Insights hub",
   description: "Content hub linking articles, guides, and FAQs for TrackYourGold.",

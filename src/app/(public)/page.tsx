@@ -14,6 +14,8 @@ import { getMarketOverview, getPricePageData, getContentHubData } from "@/server
 import { Button } from "@/components/ui/button";
 import { formatDate, formatPercent, formatQar } from "@/lib/utils";
 
+export const revalidate = 1800;
+
 export default async function HomePage() {
   const [overview, featured, hub] = await Promise.all([
     getMarketOverview("qatar"),

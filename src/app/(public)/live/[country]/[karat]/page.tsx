@@ -16,6 +16,8 @@ import { buildBreadcrumbSchema, buildFaqSchema, buildMetadata, buildPricePageSch
 import { formatDate, formatPercent, formatQar } from "@/lib/utils";
 import { getPricePageData } from "@/server/data/market";
 
+export const revalidate = 1800;
+
 export async function generateMetadata({ params }: { params: Promise<{ country: string; karat: string }> }): Promise<Metadata> {
   const { country, karat } = await params;
   const data = await getPricePageData(country, decodeURIComponent(karat));

@@ -10,6 +10,8 @@ import { buildMetadata } from "@/lib/seo";
 import { formatPercent } from "@/lib/utils";
 import { getPricePageData } from "@/server/data/market";
 
+export const revalidate = 1800;
+
 export async function generateMetadata({ params }: { params: Promise<{ country: string }> }): Promise<Metadata> {
   const { country } = await params;
   return buildMetadata({

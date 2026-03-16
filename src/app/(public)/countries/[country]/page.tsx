@@ -9,6 +9,8 @@ import { buildMetadata } from "@/lib/seo";
 import { formatQar } from "@/lib/utils";
 import { getCountryHubData } from "@/server/data/market";
 
+export const revalidate = 1800;
+
 export async function generateMetadata({ params }: { params: Promise<{ country: string }> }): Promise<Metadata> {
   const { country } = await params;
   return buildMetadata({

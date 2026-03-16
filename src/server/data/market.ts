@@ -4,6 +4,13 @@ import { ContentStatus } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { decimalToNumber, formatDate, percentChange } from "@/lib/utils";
+import {
+  getCachedContentHubData,
+  getCachedCountryHubData,
+  getCachedHistoryPageData,
+  getCachedMarketOverview,
+  getCachedPricePageData
+} from "@/server/services/pricing/public-cache";
 import { buildMarketSummary } from "@/server/services/pricing/summaries";
 import { evaluateRecommendation } from "@/server/services/pricing/recommendation";
 
@@ -22,6 +29,9 @@ export async function getCountryBySlug(slug: string) {
 
 export async function getMarketOverview(countrySlug = "qatar") {
   try {
+    const cached = await getCachedMarketOverview(countrySlug);
+    if (cached) return cached;
+
     const country = await getCountryBySlug(countrySlug);
     if (!country) return null;
 
@@ -88,6 +98,9 @@ export async function getMarketOverview(countrySlug = "qatar") {
 
 export async function getPricePageData(countrySlug: string, karatLabel: string) {
   try {
+    const cached = await getCachedPricePageData(countrySlug, karatLabel);
+    if (cached) return cached;
+
     const country = await getCountryBySlug(countrySlug);
     if (!country) return null;
 
@@ -187,6 +200,9 @@ export async function getPricePageData(countrySlug: string, karatLabel: string) 
 
 export async function getHistoryPageData(countrySlug: string, karatLabel: string) {
   try {
+    const cached = await getCachedHistoryPageData(countrySlug, karatLabel);
+    if (cached) return cached;
+
     const page = await getPricePageData(countrySlug, karatLabel);
     if (!page) return null;
 
@@ -196,8 +212,24 @@ export async function getHistoryPageData(countrySlug: string, karatLabel: string
       take: 90
     });
 
+    const globalSeries = await db.globalGoldPrice.findMany({
+      where: { countryId: page.country.id },
+      orderBy: { capturedAt: "asc" },
+      take: page.chartData.length
+    });
+
     return {
       ...page,
+      comparisonData: page.chartData.map((point, index) => {
+        const spot = decimalToNumber(globalSeries[index]?.qarPerGramEstimate ?? 0);
+        const premium = spot > 0 ? ((Number(point.price) - spot) / spot) * 100 : 0;
+
+        return {
+          ...point,
+          spot,
+          premium
+        };
+      }),
       recommendationHistory: recommendationHistory.map((item) => ({
         label: formatDate(item.createdAt, "MMM d"),
         score: item.score,
@@ -212,6 +244,9 @@ export async function getHistoryPageData(countrySlug: string, karatLabel: string
 
 export async function getCountryHubData(countrySlug: string) {
   try {
+    const cached = await getCachedCountryHubData(countrySlug);
+    if (cached) return cached;
+
     const country = await db.country.findUnique({
       where: { slug: countrySlug },
       include: {
@@ -288,6 +323,9 @@ export async function getStorePageData(countrySlug: string, citySlug: string, st
 
 export async function getContentHubData() {
   try {
+    const cached = await getCachedContentHubData();
+    if (cached) return cached;
+
     const [articles, guides, faqs] = await Promise.all([
       db.blogArticle.findMany({
         where: { status: ContentStatus.PUBLISHED },

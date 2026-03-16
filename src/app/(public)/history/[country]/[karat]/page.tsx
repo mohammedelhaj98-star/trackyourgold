@@ -9,9 +9,10 @@ import { MetricCard } from "@/components/ui/metric-card";
 import { RecommendationBadge } from "@/components/ui/recommendation-badge";
 import { SchemaScript } from "@/components/ui/schema-script";
 import { buildBreadcrumbSchema, buildMetadata } from "@/lib/seo";
-import { db } from "@/lib/db";
-import { decimalToNumber, formatPercent, formatQar } from "@/lib/utils";
+import { formatPercent, formatQar } from "@/lib/utils";
 import { getHistoryPageData } from "@/server/data/market";
+
+export const revalidate = 1800;
 
 export async function generateMetadata({ params }: { params: Promise<{ country: string; karat: string }> }): Promise<Metadata> {
   const { country, karat } = await params;
@@ -41,18 +42,6 @@ export default async function HistoryPage({ params }: { params: Promise<{ countr
     );
   }
 
-  const globalSeries = await db.globalGoldPrice.findMany({
-    where: { countryId: data.country.id },
-    orderBy: { capturedAt: "asc" },
-    take: data.chartData.length
-  });
-
-  const comparisonData = data.chartData.map((point, index) => ({
-    ...point,
-    spot: decimalToNumber(globalSeries[index]?.qarPerGramEstimate ?? 0),
-    premium: globalSeries[index] ? ((Number(point.price) - decimalToNumber(globalSeries[index].qarPerGramEstimate)) / decimalToNumber(globalSeries[index].qarPerGramEstimate)) * 100 : 0
-  }));
-
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-14 px-6 py-10 lg:px-8 lg:py-16">
       <PageViewTracker routeType="history_page" countrySlug={country} />
@@ -74,12 +63,12 @@ export default async function HistoryPage({ params }: { params: Promise<{ countr
       </section>
 
       <section className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6 shadow-panel">
-        <PriceChart title={`${karatLabel} vs spot-derived benchmark`} data={comparisonData.slice(-120)} comparisonKey="spot" />
+        <PriceChart title={`${karatLabel} vs spot-derived benchmark`} data={data.comparisonData.slice(-120)} comparisonKey="spot" />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6 shadow-panel">
-          <PriceChart title="Premium over spot" data={comparisonData.slice(-120).map((item) => ({ label: item.label, price: item.premium }))} formatValue={(value) => `${value.toFixed(1)}%`} />
+          <PriceChart title="Premium over spot" data={data.comparisonData.slice(-120).map((item) => ({ label: item.label, price: item.premium }))} formatValue={(value) => `${value.toFixed(1)}%`} />
         </div>
         <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6 shadow-panel">
           <PriceChart title="Recommendation history" data={data.recommendationHistory.map((item) => ({ label: item.label, price: item.score }))} formatValue={(value) => `${value.toFixed(0)}`} />
