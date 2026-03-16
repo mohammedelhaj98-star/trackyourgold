@@ -124,3 +124,15 @@ For production deployment, you must still define all required variables from `.e
 ## Database URL safety
 If your MySQL password includes reserved URL characters (such as `@`), URL-encode them in `DATABASE_URL`.
 Example: `Demmahom@98` -> `Demmahom%4098`.
+
+## Implemented functionality upgrades
+- **Global ingest with backup providers**: `src/lib/global/providers.ts` + `POST /api/ingest/global` now fetch XAU/USD and USD/QAR, compute QAR/gram, and persist when DB is configured.
+- **Malabar ingest persistence**: `POST /api/ingest/malabar` now retries scraping, stores raw snapshots, writes dynamic karat snapshots, and records parser failures.
+- **Recommendation persistence**: `POST /api/recommendations` now stores recommendation rows and reason records.
+- **Internal analytics endpoint**: `POST /api/analytics` tracks events for page performance and conversion measurement.
+- **Admin runtime configuration APIs**:
+  - `GET/POST /api/admin/settings` for settings persistence via `Setting` table.
+  - `GET/POST /api/admin/ad-slots` for ad slot persistence via `AdSlot` table.
+- **Shareable branded chart image**: `GET /api/share/chart` now returns a TrackYourGold-branded SVG image suitable for social sharing.
+- **Working calculator pages**: `/calculators/[slug]` includes interactive calculation logic for all required calculator slugs.
+- **Portfolio tracker logic**: dashboard portfolio page now computes cost basis, holdings, and unrealized P/L interactively.
