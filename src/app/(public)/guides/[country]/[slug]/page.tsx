@@ -1,0 +1,1 @@
+export default function Page({params}:{params:{country:string;slug:string}}){return <main className="container-page"><h1 className="text-3xl font-semibold">Guide: {params.slug} ({params.country})</h1><div className="card mt-4">Long-form SEO guide template.</div></main>}
