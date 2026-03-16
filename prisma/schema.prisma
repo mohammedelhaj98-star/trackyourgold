@@ -1,0 +1,332 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  VISITOR
+  USER
+  ADMIN
+}
+
+enum RecommendationLabel {
+  STRONG_BUY
+  BUY
+  WAIT
+  AVOID
+}
+
+enum AlertType {
+  PRICE_DROP
+  NEW_90_DAY_LOW
+  WEEKLY_SUMMARY
+}
+
+model User {
+  id                String        @id @default(cuid())
+  email             String        @unique
+  passwordHash      String?
+  name              String?
+  role              Role          @default(USER)
+  isPremium         Boolean       @default(false)
+  adsSuppressed     Boolean       @default(true)
+  countryCode       String?       @default("QA")
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  subscriptions     Subscription[]
+  alertRules        AlertRule[]
+  alertEvents       AlertEvent[]
+  purchases         Purchase[]
+  analytics         InternalAnalytics[]
+  adminAuditLogs    SystemLog[]   @relation("AdminActor")
+}
+
+model Subscription {
+  id            String   @id @default(cuid())
+  userId        String
+  planCode      String   @default("free")
+  status        String   @default("active")
+  startsAt      DateTime @default(now())
+  endsAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id])
+}
+
+model Country {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  slug          String   @unique
+  currencyCode  String
+  cities        City[]
+  stores        Store[]
+}
+
+model City {
+  id            String   @id @default(cuid())
+  countryId     String
+  name          String
+  slug          String
+  country       Country  @relation(fields: [countryId], references: [id])
+  stores        Store[]
+
+  @@unique([countryId, slug])
+}
+
+model Store {
+  id               String               @id @default(cuid())
+  countryId        String
+  cityId           String?
+  name             String
+  slug             String
+  externalUrl      String?
+  rating           Float?
+  description      String?
+  isFeatured       Boolean              @default(false)
+  country          Country              @relation(fields: [countryId], references: [id])
+  city             City?                @relation(fields: [cityId], references: [id])
+  affiliateLinks   StoreAffiliateLink[]
+  snapshots        GoldPriceSnapshot[]
+
+  @@unique([countryId, slug])
+}
+
+model StoreAffiliateLink {
+  id              String   @id @default(cuid())
+  storeId          String
+  countryCode      String?
+  title            String
+  destinationUrl   String
+  network          String?
+  isActive         Boolean  @default(true)
+  clickCount       Int      @default(0)
+  store            Store    @relation(fields: [storeId], references: [id])
+}
+
+model GoldPriceSnapshot {
+  id                 String   @id @default(cuid())
+  storeId            String
+  countryCode        String
+  karatCode          String
+  currencyCode       String
+  pricePerGram       Decimal  @db.Decimal(12, 3)
+  sourceTimestamp    DateTime?
+  scrapeTimestamp    DateTime @default(now())
+  parserVersion      String
+  scrapeStatus       String
+  isStale            Boolean  @default(false)
+  store              Store    @relation(fields: [storeId], references: [id])
+}
+
+model RawScrapeSnapshot {
+  id               String   @id @default(cuid())
+  sourceKey        String
+  html             String @db.LongText
+  parserVersion    String
+  scrapeStatus     String
+  capturedAt       DateTime @default(now())
+}
+
+model GlobalGoldPrice {
+  id               String   @id @default(cuid())
+  provider         String
+  xauUsd           Decimal  @db.Decimal(12, 4)
+  capturedAt       DateTime @default(now())
+}
+
+model ExchangeRate {
+  id               String   @id @default(cuid())
+  provider         String
+  fromCurrency     String
+  toCurrency       String
+  rate             Decimal  @db.Decimal(12, 6)
+  capturedAt       DateTime @default(now())
+}
+
+model Recommendation {
+  id               String              @id @default(cuid())
+  countryCode      String
+  karatCode        String
+  label            RecommendationLabel
+  score            Int
+  explanation      String
+  confidenceNote   String
+  generatedAt      DateTime            @default(now())
+  reasons          RecommendationReason[]
+}
+
+model RecommendationReason {
+  id               String         @id @default(cuid())
+  recommendationId String
+  key              String
+  weight           Int
+  value            Decimal        @db.Decimal(12, 4)
+  reasonText       String
+  recommendation   Recommendation @relation(fields: [recommendationId], references: [id])
+}
+
+model AlertRule {
+  id                 String      @id @default(cuid())
+  userId              String
+  type                AlertType
+  karatCode           String?
+  thresholdPercent    Float?
+  comparisonWindowHr  Int?
+  emailEnabled        Boolean     @default(true)
+  dashboardEnabled    Boolean     @default(true)
+  frequency           String      @default("daily")
+  dedupMinutes        Int         @default(120)
+  isActive            Boolean     @default(true)
+  user                User        @relation(fields: [userId], references: [id])
+}
+
+model AlertEvent {
+  id                 String     @id @default(cuid())
+  userId             String
+  alertRuleId        String?
+  type               AlertType
+  title              String
+  message            String
+  metadataJson       Json?
+  sentEmailAt        DateTime?
+  seenAt             DateTime?
+  createdAt          DateTime   @default(now())
+  user               User       @relation(fields: [userId], references: [id])
+}
+
+model EmailSubscriber {
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  countryCode        String?
+  sourcePage         String?
+  subscribedAt       DateTime @default(now())
+}
+
+model NewsletterSignup {
+  id                 String   @id @default(cuid())
+  email              String
+  listName           String   @default("weekly")
+  sourcePage         String?
+  createdAt          DateTime @default(now())
+}
+
+model Purchase {
+  id                 String   @id @default(cuid())
+  userId             String
+  purchaseDate       DateTime
+  karatCode          String
+  grams              Decimal  @db.Decimal(10, 3)
+  pricePerGram       Decimal  @db.Decimal(12, 3)
+  totalPaid          Decimal  @db.Decimal(12, 3)
+  storeName          String?
+  makingCharge       Decimal? @db.Decimal(12, 3)
+  notes              String?
+  user               User     @relation(fields: [userId], references: [id])
+}
+
+model AdSlot {
+  id                 String   @id @default(cuid())
+  key                String   @unique
+  title              String
+  enabled            Boolean  @default(true)
+  placeholderMode    Boolean  @default(true)
+  customCode         String?  @db.Text
+  placement          String
+  updatedAt          DateTime @updatedAt
+}
+
+model ContentPage {
+  id                 String   @id @default(cuid())
+  slug               String   @unique
+  locale             String   @default("en")
+  type               String
+  title              String
+  body               String @db.LongText
+  faqJson            Json?
+  relatedLinksJson   Json?
+  publishedAt        DateTime?
+  createdAt          DateTime @default(now())
+}
+
+model BlogArticle {
+  id                 String   @id @default(cuid())
+  slug               String   @unique
+  title              String
+  excerpt            String
+  body               String @db.LongText
+  status             String   @default("draft")
+  scheduledFor       DateTime?
+  publishedAt        DateTime?
+  createdAt          DateTime @default(now())
+}
+
+model FAQ {
+  id                 String   @id @default(cuid())
+  pageSlug           String
+  question           String
+  answer             String
+  sortOrder          Int      @default(0)
+}
+
+model SeoMetadata {
+  id                 String   @id @default(cuid())
+  entityType         String
+  entityId           String
+  title              String
+  description        String
+  canonicalUrl       String?
+  ogImageUrl         String?
+  twitterCard        String   @default("summary_large_image")
+}
+
+model InternalAnalytics {
+  id                 String   @id @default(cuid())
+  eventName          String
+  pagePath           String?
+  countryCode        String?
+  referrer           String?
+  metadataJson       Json?
+  userId             String?
+  createdAt          DateTime @default(now())
+  user               User?    @relation(fields: [userId], references: [id])
+}
+
+model AffiliateClick {
+  id                 String   @id @default(cuid())
+  linkId             String
+  pagePath           String
+  countryCode        String?
+  clickedAt          DateTime @default(now())
+}
+
+model SystemLog {
+  id                 String   @id @default(cuid())
+  level              String
+  category           String
+  message            String
+  metadataJson       Json?
+  actorUserId        String?
+  createdAt          DateTime @default(now())
+  actor              User?    @relation("AdminActor", fields: [actorUserId], references: [id])
+}
+
+model ParserFailure {
+  id                 String   @id @default(cuid())
+  sourceKey          String
+  errorMessage       String
+  parserVersion      String
+  retries            Int      @default(0)
+  failedAt           DateTime @default(now())
+}
+
+model Setting {
+  id                 String   @id @default(cuid())
+  key                String   @unique
+  valueJson          Json
+  updatedAt          DateTime @updatedAt
+}

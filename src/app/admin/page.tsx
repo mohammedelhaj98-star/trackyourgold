@@ -1,0 +1,1 @@
+export default function AdminPage(){return <main className="container-page"><h1 className="text-3xl font-semibold">Admin Dashboard</h1><div className="card mt-4">System health, ingestion, analytics, and settings.</div></main>}
