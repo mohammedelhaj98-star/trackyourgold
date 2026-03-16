@@ -72,13 +72,19 @@ If you prefer Prisma migrations instead of `db:push`, generate them on a develop
 npm run db:migrate
 ```
 
-For Hostinger Git deploy on plans without interactive Node/npm in SSH, the repository `build` script is designed to handle deploy-time setup:
+For Hostinger Git deploy on plans where the build runner cannot authenticate to MySQL reliably, keep the repository `build` script focused on the application build:
 
 ```bash
-prisma generate && prisma db push && prisma db seed && next build
+prisma generate && next build
 ```
 
-The seed is idempotent by default and skips once the bootstrap `qatar` dataset exists. To intentionally rebuild the bootstrap dataset, set `FORCE_SEED_RESET=true` for that deploy only.
+Then let the `start` script run schema sync and the idempotent seed on the actual app server:
+
+```bash
+prisma db push && prisma db seed && next start
+```
+
+The seed skips once the bootstrap `qatar` dataset exists. To intentionally rebuild the bootstrap dataset, set `FORCE_SEED_RESET=true` for that deploy only.
 
 ## 5. Start command
 

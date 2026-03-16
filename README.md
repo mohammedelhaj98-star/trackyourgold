@@ -310,4 +310,4 @@ The repository includes the Prisma schema and seed data. In this workspace I was
 
 - `npx prisma migrate dev --name init`
 
-For Hostinger deployment, the `build` script runs Prisma generate, schema sync, idempotent seed, and the Next.js production build in one deploy step. The seed skips automatically after first initialization unless `FORCE_SEED_RESET=true` is set.
+For Hostinger deployment on plans where the build runner cannot reliably authenticate to MySQL, the `build` script only generates Prisma and builds Next.js. Database schema sync and the idempotent seed run from the production `start` script on the actual app server. The seed skips automatically after first initialization unless `FORCE_SEED_RESET=true` is set.
