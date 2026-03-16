@@ -107,6 +107,25 @@ async function resolveProvider(primary: string, backup: string, kind: "gold" | "
   }
 }
 
+export async function fetchLiveGlobalBenchmark() {
+  const [gold, fx] = await Promise.all([
+    resolveProvider(env.GLOBAL_GOLD_PRIMARY_PROVIDER, env.GLOBAL_GOLD_BACKUP_PROVIDER, "gold"),
+    resolveProvider(env.GLOBAL_FX_PRIMARY_PROVIDER, env.GLOBAL_FX_BACKUP_PROVIDER, "fx")
+  ]);
+
+  const qarPerGramEstimate = (gold.value / TROY_OUNCE_GRAMS) * fx.value;
+  const capturedAt = new Date();
+
+  return {
+    goldProvider: gold.provider,
+    fxProvider: fx.provider,
+    xauUsd: gold.value,
+    usdQar: fx.value,
+    qarPerGramEstimate,
+    capturedAt
+  };
+}
+
 export async function ingestGlobalMarketData() {
   const country = await db.country.findUnique({ where: { slug: "qatar" } });
   if (!country) {
@@ -114,40 +133,31 @@ export async function ingestGlobalMarketData() {
   }
 
   try {
-    const [gold, fx] = await Promise.all([
-      resolveProvider(env.GLOBAL_GOLD_PRIMARY_PROVIDER, env.GLOBAL_GOLD_BACKUP_PROVIDER, "gold"),
-      resolveProvider(env.GLOBAL_FX_PRIMARY_PROVIDER, env.GLOBAL_FX_BACKUP_PROVIDER, "fx")
-    ]);
-
-    const qarPerGramEstimate = (gold.value / TROY_OUNCE_GRAMS) * fx.value;
-    const capturedAt = new Date();
+    const benchmark = await fetchLiveGlobalBenchmark();
 
     await db.$transaction([
       db.exchangeRate.create({
         data: {
           countryId: country.id,
-          provider: fx.provider,
+          provider: benchmark.fxProvider,
           baseCurrency: "USD",
           quoteCurrency: "QAR",
-          rate: fx.value,
-          capturedAt,
+          rate: benchmark.usdQar,
+          capturedAt: benchmark.capturedAt,
           status: SnapshotStatus.SUCCESS,
-          metadataJson: fx.meta ? (fx.meta as Prisma.InputJsonValue) : undefined
+          metadataJson: undefined
         }
       }),
       db.globalGoldPrice.create({
         data: {
           countryId: country.id,
-          provider: gold.provider,
+          provider: benchmark.goldProvider,
           symbol: "XAU/USD",
-          priceUsdPerTroyOunce: gold.value,
-          qarPerGramEstimate,
-          capturedAt,
+          priceUsdPerTroyOunce: benchmark.xauUsd,
+          qarPerGramEstimate: benchmark.qarPerGramEstimate,
+          capturedAt: benchmark.capturedAt,
           status: SnapshotStatus.SUCCESS,
-          metadataJson: {
-            gold: gold.meta ?? null,
-            fx: fx.meta ?? null
-          } as Prisma.InputJsonValue
+          metadataJson: undefined as Prisma.InputJsonValue | undefined
         }
       }),
       db.systemLog.create({
@@ -156,9 +166,9 @@ export async function ingestGlobalMarketData() {
           category: "market-data",
           message: "Global spot-derived benchmark refreshed.",
           metadataJson: {
-            goldProvider: gold.provider,
-            fxProvider: fx.provider,
-            qarPerGramEstimate
+            goldProvider: benchmark.goldProvider,
+            fxProvider: benchmark.fxProvider,
+            qarPerGramEstimate: benchmark.qarPerGramEstimate
           }
         }
       })
@@ -166,11 +176,11 @@ export async function ingestGlobalMarketData() {
 
     return {
       ok: true,
-      goldProvider: gold.provider,
-      fxProvider: fx.provider,
-      xauUsd: gold.value,
-      usdQar: fx.value,
-      qarPerGramEstimate
+      goldProvider: benchmark.goldProvider,
+      fxProvider: benchmark.fxProvider,
+      xauUsd: benchmark.xauUsd,
+      usdQar: benchmark.usdQar,
+      qarPerGramEstimate: benchmark.qarPerGramEstimate
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown global pricing failure.";

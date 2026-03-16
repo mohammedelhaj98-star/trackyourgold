@@ -11,6 +11,11 @@ import {
   getCachedMarketOverview,
   getCachedPricePageData
 } from "@/server/services/pricing/public-cache";
+import {
+  getRuntimeHistoryPageData,
+  getRuntimeMarketOverview,
+  getRuntimePricePageData
+} from "@/server/services/pricing/runtime-public-cache";
 import { buildMarketSummary } from "@/server/services/pricing/summaries";
 import { evaluateRecommendation } from "@/server/services/pricing/recommendation";
 
@@ -29,6 +34,9 @@ export async function getCountryBySlug(slug: string) {
 
 export async function getMarketOverview(countrySlug = "qatar") {
   try {
+    const runtime = await getRuntimeMarketOverview(countrySlug);
+    if (runtime) return runtime;
+
     const cached = await getCachedMarketOverview(countrySlug);
     if (cached) return cached;
 
@@ -98,6 +106,9 @@ export async function getMarketOverview(countrySlug = "qatar") {
 
 export async function getPricePageData(countrySlug: string, karatLabel: string) {
   try {
+    const runtime = await getRuntimePricePageData(countrySlug, karatLabel);
+    if (runtime) return runtime;
+
     const cached = await getCachedPricePageData(countrySlug, karatLabel);
     if (cached) return cached;
 
@@ -200,6 +211,9 @@ export async function getPricePageData(countrySlug: string, karatLabel: string) 
 
 export async function getHistoryPageData(countrySlug: string, karatLabel: string) {
   try {
+    const runtime = await getRuntimeHistoryPageData(countrySlug, karatLabel);
+    if (runtime) return runtime;
+
     const cached = await getCachedHistoryPageData(countrySlug, karatLabel);
     if (cached) return cached;
 

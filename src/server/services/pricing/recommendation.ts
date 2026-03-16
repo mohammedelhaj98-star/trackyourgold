@@ -78,21 +78,29 @@ function computeLabel(score: number, thresholds = defaultThresholds) {
 }
 
 export async function getRecommendationConfig() {
-  const settings = await db.setting.findMany({
-    where: {
-      key: {
-        in: ["recommendation.weights", "recommendation.thresholds"]
+  try {
+    const settings = await db.setting.findMany({
+      where: {
+        key: {
+          in: ["recommendation.weights", "recommendation.thresholds"]
+        }
       }
-    }
-  });
+    });
 
-  const weightsSetting = settings.find((setting) => setting.key === "recommendation.weights");
-  const thresholdsSetting = settings.find((setting) => setting.key === "recommendation.thresholds");
+    const weightsSetting = settings.find((setting) => setting.key === "recommendation.weights");
+    const thresholdsSetting = settings.find((setting) => setting.key === "recommendation.thresholds");
 
-  return {
-    weights: weightsSetting ? { ...defaultWeights, ...JSON.parse(weightsSetting.value) } : defaultWeights,
-    thresholds: thresholdsSetting ? { ...defaultThresholds, ...JSON.parse(thresholdsSetting.value) } : defaultThresholds
-  };
+    return {
+      weights: weightsSetting ? { ...defaultWeights, ...JSON.parse(weightsSetting.value) } : defaultWeights,
+      thresholds: thresholdsSetting ? { ...defaultThresholds, ...JSON.parse(thresholdsSetting.value) } : defaultThresholds
+    };
+  } catch (error) {
+    console.error("[recommendation:config]", error);
+    return {
+      weights: defaultWeights,
+      thresholds: defaultThresholds
+    };
+  }
 }
 
 export async function evaluateRecommendation(input: {

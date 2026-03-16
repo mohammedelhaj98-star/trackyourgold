@@ -2,11 +2,25 @@ import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import { decimalToNumber } from "@/lib/utils";
+import { getRuntimePricePageData } from "@/server/services/pricing/runtime-public-cache";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const countrySlug = searchParams.get("country") ?? "qatar";
   const karat = searchParams.get("karat") ?? "22K";
+
+  const runtime = await getRuntimePricePageData(countrySlug, karat);
+  if (runtime) {
+    return NextResponse.json({
+      ok: true,
+      country: runtime.country.slug,
+      karat,
+      points: runtime.chartData.map((point) => ({
+        timestamp: point.timestamp,
+        pricePerGram: point.price
+      }))
+    });
+  }
 
   const country = await db.country.findUnique({ where: { slug: countrySlug } });
   if (!country) {

@@ -130,6 +130,16 @@ async function fetchMalabarHtml() {
   throw lastError instanceof Error ? lastError : new Error("Unknown Malabar fetch failure.");
 }
 
+export async function fetchLiveMalabarRates() {
+  const html = await fetchMalabarHtml();
+  const parsed = parseMalabarHtml(html);
+
+  return {
+    html,
+    ...parsed
+  };
+}
+
 export async function ingestMalabarRates() {
   const country = await db.country.findUnique({ where: { slug: "qatar" } });
   const store = await db.store.findFirst({ where: { countryId: country?.id, isPrimarySource: true } });
@@ -139,8 +149,7 @@ export async function ingestMalabarRates() {
   }
 
   try {
-    const html = await fetchMalabarHtml();
-    const parsed = parseMalabarHtml(html);
+    const { html, ...parsed } = await fetchLiveMalabarRates();
     const status = parsed.rates.length ? SnapshotStatus.SUCCESS : SnapshotStatus.FAILED;
 
     const rawSnapshot =
