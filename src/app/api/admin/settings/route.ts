@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { recommendationDefaults } from '@/lib/config/appConfig';
@@ -7,6 +8,11 @@ const defaultSettings = {
   adsEnabled: true,
   recommendationDefaults,
 };
+
+function toInputJsonValue(value: unknown): Prisma.InputJsonValue | Prisma.JsonNull {
+  if (value === null) return Prisma.JsonNull;
+  return value as Prisma.InputJsonValue;
+}
 
 export async function GET() {
   if (!process.env.DATABASE_URL) return NextResponse.json(defaultSettings);
@@ -19,12 +25,19 @@ export async function POST(req: Request) {
   if (!process.env.DATABASE_URL) {
     return NextResponse.json({ error: 'DATABASE_URL required for persistence' }, { status: 400 });
   }
-  const body = await req.json();
-  const entries = Object.entries(body as Record<string, unknown>);
+
+  const body = (await req.json()) as Record<string, unknown>;
+  const entries = Object.entries(body);
+
   await Promise.all(
     entries.map(([key, value]) =>
-      prisma.setting.upsert({ where: { key }, create: { key, valueJson: value }, update: { valueJson: value } }),
+      prisma.setting.upsert({
+        where: { key },
+        create: { key, valueJson: toInputJsonValue(value) },
+        update: { valueJson: toInputJsonValue(value) },
+      }),
     ),
   );
+
   return NextResponse.json({ ok: true });
 }
