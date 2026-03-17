@@ -4,15 +4,29 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 
 import { formatQar } from "@/lib/utils";
 
+type PriceChartFormat = "qar" | "percent-1" | "number-0";
+
 type PriceChartProps = {
   data: Array<Record<string, string | number>>;
   dataKey?: string;
   comparisonKey?: string;
   title?: string;
-  formatValue?: (value: number) => string;
+  format?: PriceChartFormat;
 };
 
-export function PriceChart({ data, dataKey = "price", comparisonKey, title, formatValue = (value) => formatQar(value) }: PriceChartProps) {
+function formatChartValue(value: number, format: PriceChartFormat) {
+  switch (format) {
+    case "percent-1":
+      return `${value.toFixed(1)}%`;
+    case "number-0":
+      return `${value.toFixed(0)}`;
+    case "qar":
+    default:
+      return formatQar(value);
+  }
+}
+
+export function PriceChart({ data, dataKey = "price", comparisonKey, title, format = "qar" }: PriceChartProps) {
   return (
     <div className="h-[340px] w-full">
       {title ? <p className="mb-4 text-sm font-medium text-white/60">{title}</p> : null}
@@ -30,7 +44,7 @@ export function PriceChart({ data, dataKey = "price", comparisonKey, title, form
           </defs>
           <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
           <XAxis dataKey="label" stroke="rgba(255,255,255,0.45)" tickLine={false} axisLine={false} minTickGap={24} />
-          <YAxis stroke="rgba(255,255,255,0.45)" tickLine={false} axisLine={false} width={70} tickFormatter={(value) => formatValue(Number(value))} />
+          <YAxis stroke="rgba(255,255,255,0.45)" tickLine={false} axisLine={false} width={70} tickFormatter={(value) => formatChartValue(Number(value), format)} />
           <Tooltip
             contentStyle={{
               background: "rgba(7, 11, 20, 0.94)",
@@ -38,7 +52,7 @@ export function PriceChart({ data, dataKey = "price", comparisonKey, title, form
               borderRadius: 18,
               color: "white"
             }}
-            formatter={(value: number) => formatValue(value)}
+            formatter={(value: number) => formatChartValue(value, format)}
           />
           <Area type="monotone" dataKey={dataKey} stroke="#FBD96A" strokeWidth={2.5} fill="url(#priceGradient)" />
           {comparisonKey ? (

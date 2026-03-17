@@ -68,10 +68,10 @@ export default async function HistoryPage({ params }: { params: Promise<{ countr
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6 shadow-panel">
-          <PriceChart title="Premium over spot" data={data.comparisonData.slice(-120).map((item) => ({ label: item.label, price: item.premium }))} formatValue={(value) => `${value.toFixed(1)}%`} />
+          <PriceChart title="Premium over spot" data={data.comparisonData.slice(-120).map((item) => ({ label: item.label, price: item.premium }))} format="percent-1" />
         </div>
         <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6 shadow-panel">
-          <PriceChart title="Recommendation history" data={data.recommendationHistory.map((item) => ({ label: item.label, price: item.score }))} formatValue={(value) => `${value.toFixed(0)}`} />
+          <PriceChart title="Recommendation history" data={data.recommendationHistory.map((item) => ({ label: item.label, price: item.score }))} format="number-0" />
         </div>
       </section>
 

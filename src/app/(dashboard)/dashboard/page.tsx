@@ -71,7 +71,7 @@ export default async function DashboardPage() {
           <PriceChart title="Intraday and recent trend" data={featured.chartData.slice(-60)} />
         </div>
         <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6 shadow-panel">
-          <PriceChart title="Premium over spot trend" data={premiumChartData} formatValue={(value) => `${value.toFixed(1)}%`} />
+          <PriceChart title="Premium over spot trend" data={premiumChartData} format="percent-1" />
         </div>
       </section>
 
