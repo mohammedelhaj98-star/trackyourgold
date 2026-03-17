@@ -4,7 +4,7 @@ import type { RecommendationLabel } from "@prisma/client";
 import { getHomepageData, getPublishedContentPages } from "@/lib/cms";
 import { getHomepageMarketData } from "@/lib/home-market";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 function formatRecommendationLabel(label: string | RecommendationLabel | null) {
   switch (label) {
