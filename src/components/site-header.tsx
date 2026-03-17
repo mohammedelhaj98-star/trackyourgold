@@ -7,7 +7,6 @@ type SiteHeaderProps = {
 };
 
 export function SiteHeader({ navigation }: SiteHeaderProps) {
-
   return (
     <header className="site-header">
       <div className="shell site-header__inner">
@@ -15,7 +14,7 @@ export function SiteHeader({ navigation }: SiteHeaderProps) {
           <span className="brand__mark">TG</span>
           <span>
             <strong>TrackYourGold</strong>
-            <span className="brand__sub">reset baseline</span>
+            <span className="brand__sub">daily gold intelligence</span>
           </span>
         </Link>
         <nav className="site-nav">

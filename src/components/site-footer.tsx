@@ -7,16 +7,15 @@ type SiteFooterProps = {
 };
 
 export function SiteFooter({ navigation }: SiteFooterProps) {
-
   return (
     <footer className="site-footer">
       <div className="shell site-footer__grid">
         <div className="stack">
-          <p className="eyebrow">Reset status</p>
-          <h2>Built to prove deployment stability first.</h2>
+          <p className="eyebrow">TrackYourGold</p>
+          <h2>Modern gold intelligence with a calmer product surface.</h2>
           <p className="muted">
-            The old TrackYourGold implementation is archived. This branch now exists to validate runtime stability,
-            homepage control, and a smaller admin-operated CMS before any larger feature returns.
+            The product is being rebuilt to feel like a premium financial intelligence tool: answer-first, card-led,
+            and easier to trust on a daily visit.
           </p>
         </div>
         <div className="stack">
