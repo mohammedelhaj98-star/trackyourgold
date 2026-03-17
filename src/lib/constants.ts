@@ -4,6 +4,11 @@ export const siteConfig = {
   description:
     "Track Malabar Gold & Diamonds Qatar rates, compare them with global spot-derived prices, and get data-driven buy timing signals.",
   nav: [
+    { label: "Platform", href: "/#platform" },
+    { label: "Workflow", href: "/#workflow" },
+    { label: "SEO Index", href: "/#seo-index" }
+  ],
+  seoNav: [
     { label: "Live Prices", href: "/live/qatar/22K" },
     { label: "History", href: "/history/qatar/22K" },
     { label: "Best Time to Buy", href: "/best-time-to-buy/qatar" },

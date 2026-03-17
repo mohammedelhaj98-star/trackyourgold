@@ -3,6 +3,7 @@ import { FinancialDisclaimer } from "@/components/ui/disclaimer";
 import { InternalLinksGrid } from "@/components/ui/internal-links-grid";
 import { MetricCard } from "@/components/ui/metric-card";
 import { SectionHeading } from "@/components/ui/section-heading";
+import { siteConfig } from "@/lib/constants";
 
 export default function HomePage() {
   return (
@@ -12,99 +13,131 @@ export default function HomePage() {
           <div className="space-y-5">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-gold-200">TrackYourGold</p>
             <h1 className="max-w-4xl font-display text-5xl font-semibold tracking-tight text-white md:text-7xl">
-              Gold intelligence for Qatar today, global expansion tomorrow.
+              One homepage first. Everything else gets rebuilt properly from there.
             </h1>
             <p className="max-w-3xl text-base leading-8 text-white/72 md:text-lg">
-              Follow live Qatar pricing, compare store rates against spot-derived benchmarks, and use TrackYourGold as the
-              public front door for alerts, accounts, calculators, and future premium tools.
+              TrackYourGold is shifting to a homepage-first product shell. The homepage becomes the stable front door for
+              users, accounts, alerts, and operator workflows, while the older market pages stay published quietly in the
+              background for SEO until each one is rebuilt page by page.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button href="/live/qatar/22K">Open live 22K price</Button>
-            <Button href="/alerts" variant="secondary">Get free price alerts</Button>
+            <Button href="/register">Create account</Button>
+            <Button href="/dashboard" variant="secondary">Open dashboard</Button>
+            <Button href="/#platform" variant="ghost">See platform</Button>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             <MetricCard
-              label="Live rate tracking"
-              value="Qatar"
-              detail="Public live price pages stay available even when the private database is under maintenance."
+              label="Homepage-first UX"
+              value="1 shell"
+              detail="A single stable front door keeps the product understandable while the deeper pages are rebuilt in order."
             />
             <MetricCard
-              label="Buy signal engine"
-              value="4 labels"
-              detail="Strong Buy, Buy, Wait, and Avoid are generated from tracked rate behavior and spot premium."
+              label="Account system"
+              value="Ready"
+              detail="Registration, login, dashboard access, and admin controls stay part of the main product experience."
             />
             <MetricCard
-              label="Portfolio tools"
-              value="Accounts"
-              detail="Registration unlocks alerts, calculators, and personal tracking without relying on ads."
+              label="SEO background"
+              value="Kept"
+              detail="Older public routes remain online and crawlable, but they stop defining the main navigation."
             />
           </div>
         </div>
 
         <div className="space-y-4 rounded-[32px] border border-white/10 bg-white/[0.04] p-6 shadow-panel">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold-200">Start here</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold-200">Product reset</p>
           <div className="space-y-4">
             <div>
-              <p className="text-sm text-white/55">Fastest working route</p>
-              <p className="mt-2 font-display text-4xl font-semibold text-white">22K live page</p>
+              <p className="text-sm text-white/55">Current direction</p>
+              <p className="mt-2 font-display text-4xl font-semibold text-white">Build cleanly, page by page</p>
               <p className="mt-2 text-sm text-white/65">
-                Use the live Qatar route for the current tracked price, chart data, and recommendation summary.
+                Start with the homepage as the stable product surface, then rebuild admin, dashboard, live pages, and
+                analysis pages in sequence instead of carrying all legacy complexity at once.
               </p>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-white/45">Primary route</p>
-                <p className="mt-2 text-xl font-semibold text-white">/live/qatar/22K</p>
+                <p className="text-xs uppercase tracking-[0.22em] text-white/45">First rebuilt area</p>
+                <p className="mt-2 text-xl font-semibold text-white">Homepage</p>
               </div>
               <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-white/45">API route</p>
-                <p className="mt-2 text-xl font-semibold text-white">/api/chart-data</p>
+                <p className="text-xs uppercase tracking-[0.22em] text-white/45">Next rebuild target</p>
+                <p className="mt-2 text-xl font-semibold text-white">Admin side</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="space-y-8">
+      <section id="platform" className="space-y-8 scroll-mt-28">
         <SectionHeading
-          eyebrow="Built to rank and convert"
-          title="Public pages, tools, and account flows in one architecture"
-          description="TrackYourGold is designed as an SEO-first product: live pricing pages bring traffic in, alerts and accounts capture demand, and calculators and guides create depth for search and repeat visits."
+          eyebrow="Platform"
+          title="The new front door is about product clarity, not route count"
+          description="The main site should explain the product, capture accounts, and guide users into the right tools. Deep public routes can stay online for search while we redesign them with a cleaner standard."
+        />
+        <div className="grid gap-4 md:grid-cols-3">
+          <MetricCard
+            label="Public layer"
+            value="Homepage"
+            detail="The homepage becomes the product narrative, trust surface, and conversion layer for new visitors."
+          />
+          <MetricCard
+            label="Private layer"
+            value="Accounts"
+            detail="Dashboard, alerts, saved analysis, and admin stay product-led instead of feeling bolted onto SEO pages."
+          />
+          <MetricCard
+            label="Content layer"
+            value="SEO kept"
+            detail="Existing deep routes remain available in the background so search equity is not thrown away."
+          />
+        </div>
+      </section>
+
+      <section id="workflow" className="space-y-8 scroll-mt-28">
+        <SectionHeading
+          eyebrow="Workflow"
+          title="Rebuild order stays intentional"
+          description="We keep the homepage live as the stable shell, then rebuild one section at a time so each area lands finished instead of spreading effort across dozens of half-working pages."
+        />
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6 shadow-panel">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold-200">Step 1</p>
+            <h3 className="mt-4 font-display text-2xl font-semibold text-white">Stable homepage shell</h3>
+            <p className="mt-3 text-sm leading-7 text-white/68">
+              Clean narrative, clear account CTAs, reliable brand surface, and minimal dependency on deeper routes.
+            </p>
+          </div>
+          <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6 shadow-panel">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold-200">Step 2</p>
+            <h3 className="mt-4 font-display text-2xl font-semibold text-white">Admin and dashboard</h3>
+            <p className="mt-3 text-sm leading-7 text-white/68">
+              Build operator and user tools with a cleaner data model and less fragile page rendering.
+            </p>
+          </div>
+          <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6 shadow-panel">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold-200">Step 3</p>
+            <h3 className="mt-4 font-display text-2xl font-semibold text-white">Public pages one by one</h3>
+            <p className="mt-3 text-sm leading-7 text-white/68">
+              Reintroduce live, history, calculators, and guides only when each page is stable enough to deserve main-nav attention.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="seo-index" className="space-y-8 scroll-mt-28">
+        <SectionHeading
+          eyebrow="Background SEO"
+          title="Keep the older public routes alive, but out of the way"
+          description="These routes remain published as search-entry pages while the main product experience focuses on the homepage. They still matter, but they no longer define the primary navigation."
         />
         <InternalLinksGrid
-          items={[
-            {
-              href: "/live/qatar/22K",
-              title: "22K gold price in Qatar today",
-              description: "Live route with the real tracked price, recommendation summary, and chart payload."
-            },
-            {
-              href: "/history/qatar/22K",
-              title: "22K gold price history in Qatar",
-              description: "Historical trend view for local gold prices and recommendation history."
-            },
-            {
-              href: "/best-time-to-buy/qatar",
-              title: "Best time to buy gold in Qatar",
-              description: "A timing-focused landing page based on the same recommendation engine."
-            },
-            {
-              href: "/calculators/qar-gold-calculator",
-              title: "QAR gold calculator",
-              description: "Tool page for buyers comparing grams, rates, and local totals."
-            },
-            {
-              href: "/gold-insights",
-              title: "Gold Insights",
-              description: "Content hub for explainers, guides, and market context."
-            },
-            {
-              href: "/alerts",
-              title: "Free price drop alerts",
-              description: "Lead-capture route for alert signups and account creation."
-            }
-          ]}
+          items={siteConfig.seoNav.map((item) => ({
+            href: item.href,
+            title: item.label,
+            description: "Legacy public route kept published for background SEO and future rebuild sequencing."
+          }))}
         />
       </section>
 
