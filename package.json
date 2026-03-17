@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "start": "node --single-threaded --v8-pool-size=1 server.js",
+    "start": "node --single-threaded --v8-pool-size=1 .next/standalone/server.js",
     "db:generate": "prisma generate",
     "db:push": "prisma db push"
   },
@@ -24,4 +24,3 @@
     "typescript": "^5.8.2"
   }
 }
-

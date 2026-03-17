@@ -8,6 +8,7 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true
   },
+  output: "standalone",
   outputFileTracingRoot: workspaceRoot,
   experimental: {
     cpus: 1
