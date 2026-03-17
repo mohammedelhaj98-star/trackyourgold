@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
 
-import { db } from "@/lib/db";
 import { absoluteUrl } from "@/lib/utils";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -18,6 +17,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
+    const { db } = await import("@/lib/db");
     const [countries, cities, stores, articles] = await Promise.all([
       db.country.findMany({ where: { isActive: true } }),
       db.city.findMany({ where: { isActive: true }, include: { country: true } }),

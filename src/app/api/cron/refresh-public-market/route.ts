@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { authorizeCron } from "@/lib/cron";
-import { refreshRuntimePublicMarketCache } from "@/server/services/pricing/runtime-public-cache";
-
 export async function GET(request: Request) {
+  const [{ authorizeCron }, { refreshRuntimePublicMarketCache }] = await Promise.all([
+    import("@/lib/cron"),
+    import("@/server/services/pricing/runtime-public-cache")
+  ]);
   if (!authorizeCron(request)) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }

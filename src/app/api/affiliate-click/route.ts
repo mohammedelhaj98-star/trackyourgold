@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { getCurrentUser } from "@/lib/auth/session";
-import { db } from "@/lib/db";
-
 export async function POST(request: Request) {
+  const [{ getCurrentUser }, { db }] = await Promise.all([
+    import("@/lib/auth/session"),
+    import("@/lib/db")
+  ]);
   const body = (await request.json()) as {
     affiliateLinkId?: string;
     storeId?: string;

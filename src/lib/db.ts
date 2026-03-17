@@ -25,17 +25,36 @@ function buildRuntimeDatabaseUrl() {
   }
 }
 
-export const db =
-  global.__trackYourGoldPrisma ??
-  new PrismaClient({
+function getPrismaClient() {
+  if (global.__trackYourGoldPrisma) {
+    return global.__trackYourGoldPrisma;
+  }
+
+  const runtimeUrl = buildRuntimeDatabaseUrl();
+  if (!runtimeUrl) {
+    throw new Error("DATABASE_URL is not configured.");
+  }
+
+  const client = new PrismaClient({
     datasources: {
       db: {
-        url: buildRuntimeDatabaseUrl()
+        url: runtimeUrl
       }
     },
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"]
   });
 
-if (process.env.NODE_ENV !== "production") {
-  global.__trackYourGoldPrisma = db;
+  if (process.env.NODE_ENV !== "production") {
+    global.__trackYourGoldPrisma = client;
+  }
+
+  return client;
 }
+
+export const db = new Proxy({} as PrismaClient, {
+  get(_target, property, _receiver) {
+    const client = getPrismaClient();
+    const value = Reflect.get(client as unknown as object, property, client);
+    return typeof value === "function" ? value.bind(client) : value;
+  }
+});

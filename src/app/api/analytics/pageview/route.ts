@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { getCurrentUser } from "@/lib/auth/session";
-import { db } from "@/lib/db";
-
 export async function POST(request: Request) {
+  const [{ getCurrentUser }, { db }] = await Promise.all([
+    import("@/lib/auth/session"),
+    import("@/lib/db")
+  ]);
   const body = (await request.json()) as { path?: string; routeType?: string; countrySlug?: string; referrer?: string | null };
   const user = await getCurrentUser();
   const country = body.countrySlug ? await db.country.findUnique({ where: { slug: body.countrySlug } }) : null;
