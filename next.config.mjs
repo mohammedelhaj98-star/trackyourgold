@@ -1,29 +1,16 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const workspaceRoot = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import("next").NextConfig} */
 const nextConfig = {
-  output: "standalone",
-  outputFileTracingRoot: __dirname,
   eslint: {
     ignoreDuringBuilds: true
   },
+  outputFileTracingRoot: workspaceRoot,
   experimental: {
-    cpus: 1,
-    serverActions: {
-      bodySizeLimit: "2mb"
-    }
-  },
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**"
-      }
-    ]
+    cpus: 1
   }
 };
 

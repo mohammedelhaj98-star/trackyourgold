@@ -1,92 +1,121 @@
 import "server-only";
 
-import { createHash, randomBytes } from "crypto";
-import { cache } from "react";
+import crypto from "node:crypto";
+
+import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
-import { env } from "@/lib/env";
+import { env, hasDatabaseConfig, hasSessionConfig, isProduction } from "@/lib/env";
 
-const SESSION_DURATION_DAYS = 30;
+const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 30;
 
 function hashToken(token: string) {
-  return createHash("sha256").update(`${token}:${env.SESSION_SECRET}`).digest("hex");
+  return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-async function getCookieStore() {
-  return cookies();
+export async function authenticateUser(email: string, password: string) {
+  if (!hasDatabaseConfig()) return null;
+
+  try {
+    const user = await db.user.findUnique({ where: { email } });
+    if (!user) return null;
+
+    const isValid = await bcrypt.compare(password, user.passwordHash);
+    return isValid ? user : null;
+  } catch {
+    return null;
+  }
 }
 
-export async function createUserSession(userId: string, meta?: { ipAddress?: string; userAgent?: string }) {
-  const sessionToken = randomBytes(32).toString("hex");
-  const tokenHash = hashToken(sessionToken);
-  const expiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000);
+export async function createSession(userId: string) {
+  if (!hasDatabaseConfig() || !hasSessionConfig()) {
+    throw new Error("Session configuration is incomplete.");
+  }
+
+  const token = `${crypto.randomBytes(24).toString("hex")}.${Date.now()}`;
+  const tokenHash = hashToken(token);
+  const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
 
   await db.session.create({
     data: {
       userId,
       tokenHash,
-      expiresAt,
-      ipAddress: meta?.ipAddress,
-      userAgent: meta?.userAgent
+      expiresAt
     }
   });
 
-  const cookieStore = await getCookieStore();
-  cookieStore.set(env.SESSION_COOKIE_NAME, sessionToken, {
+  const cookieStore = await cookies();
+  cookieStore.set(env.sessionCookieName, token, {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
     sameSite: "lax",
-    expires: expiresAt,
-    path: "/"
+    secure: isProduction(),
+    path: "/",
+    expires: expiresAt
   });
 }
 
-export const getCurrentSession = cache(async () => {
-  const cookieStore = await getCookieStore();
-  const sessionToken = cookieStore.get(env.SESSION_COOKIE_NAME)?.value;
+export async function destroySession() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(env.sessionCookieName)?.value;
 
-  if (!sessionToken) return null;
+  if (token && hasDatabaseConfig()) {
+    try {
+      await db.session.delete({ where: { tokenHash: hashToken(token) } });
+    } catch {
+      // Ignore missing/expired sessions during logout.
+    }
+  }
 
-  let session = null;
+  cookieStore.set(env.sessionCookieName, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: isProduction(),
+    path: "/",
+    expires: new Date(0)
+  });
+}
+
+export async function getCurrentUser() {
+  if (!hasDatabaseConfig()) return null;
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get(env.sessionCookieName)?.value;
+  if (!token) return null;
 
   try {
-    session = await db.session.findUnique({
-      where: { tokenHash: hashToken(sessionToken) },
+    const session = await db.session.findUnique({
+      where: { tokenHash: hashToken(token) },
       include: { user: true }
     });
-  } catch (error) {
-    console.error("[auth:getCurrentSession]", error);
-    return null;
-  }
 
-  if (!session || session.expiresAt < new Date()) {
-    if (session) {
-      await db.session.delete({ where: { id: session.id } }).catch(() => null);
-    }
-    cookieStore.delete(env.SESSION_COOKIE_NAME);
-    return null;
-  }
-
-  return session;
-});
-
-export const getCurrentUser = cache(async () => {
-  const session = await getCurrentSession();
-  return session?.user ?? null;
-});
-
-export async function destroyCurrentSession() {
-  const cookieStore = await getCookieStore();
-  const sessionToken = cookieStore.get(env.SESSION_COOKIE_NAME)?.value;
-
-  if (sessionToken) {
-    await db.session.deleteMany({
-      where: {
-        tokenHash: hashToken(sessionToken)
+    if (!session) return null;
+    if (session.expiresAt < new Date()) {
+      try {
+        await db.session.delete({ where: { id: session.id } });
+      } catch {
+        // Ignore cleanup failure here.
       }
-    });
+      return null;
+    }
+
+    return session.user;
+  } catch {
+    return null;
+  }
+}
+
+export async function requireAdmin(nextPath = "/admin") {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect(`/login?next=${encodeURIComponent(nextPath)}`);
   }
 
-  cookieStore.delete(env.SESSION_COOKIE_NAME);
+  if (user.role !== "ADMIN") {
+    redirect("/");
+  }
+
+  return user;
 }
+

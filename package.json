@@ -1,48 +1,27 @@
 {
   "name": "trackyourgold",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "node --single-threaded --v8-pool-size=1 server.js",
-    "lint": "next lint",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate deploy",
-    "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "db:push": "prisma db push"
   },
   "dependencies": {
-    "@prisma/client": "^6.6.0",
-    "@vercel/og": "^0.6.4",
+    "@prisma/client": "^6.19.2",
     "bcryptjs": "^2.4.3",
-    "cheerio": "^1.0.0",
-    "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
-    "lucide-react": "^0.511.0",
-    "next": "^15.3.0",
-    "next-themes": "^0.4.4",
-    "nodemailer": "^6.10.1",
-    "prisma": "^6.6.0",
+    "next": "^15.5.12",
+    "prisma": "^6.19.2",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "recharts": "^2.15.2",
-    "tsx": "^4.19.3",
-    "zod": "^3.24.2"
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
-    "@types/nodemailer": "^6.4.17",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
-    "autoprefixer": "^10.4.21",
-    "eslint": "^9.23.0",
-    "eslint-config-next": "^15.3.0",
-    "postcss": "^8.5.3",
-    "tailwindcss": "^3.4.17",
     "typescript": "^5.8.2"
   }
 }
+

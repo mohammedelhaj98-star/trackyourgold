@@ -1,60 +1,45 @@
+import "server-only";
+
 import { PrismaClient } from "@prisma/client";
 
+import { env } from "@/lib/env";
+
 declare global {
-  // eslint-disable-next-line no-var
   var __trackYourGoldPrisma: PrismaClient | undefined;
 }
 
-function buildRuntimeDatabaseUrl() {
-  const rawUrl = process.env.DATABASE_URL;
-  if (!rawUrl) {
-    return undefined;
-  }
-
-  try {
-    const url = new URL(rawUrl);
-    if (url.protocol === "mysql:") {
-      // Hostinger shared hosting is sensitive to bursty Prisma pools.
-      url.searchParams.set("connection_limit", "1");
-      url.searchParams.set("connect_timeout", "5");
-      url.searchParams.set("pool_timeout", "5");
-    }
-    return url.toString();
-  } catch {
-    return rawUrl;
-  }
-}
-
-function getPrismaClient() {
-  if (global.__trackYourGoldPrisma) {
-    return global.__trackYourGoldPrisma;
-  }
-
-  const runtimeUrl = buildRuntimeDatabaseUrl();
-  if (!runtimeUrl) {
+export function getDb() {
+  if (!env.databaseUrl) {
     throw new Error("DATABASE_URL is not configured.");
   }
 
-  const client = new PrismaClient({
-    datasources: {
-      db: {
-        url: runtimeUrl
-      }
-    },
-    log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"]
-  });
-
-  if (process.env.NODE_ENV !== "production") {
-    global.__trackYourGoldPrisma = client;
+  if (!global.__trackYourGoldPrisma) {
+    global.__trackYourGoldPrisma = new PrismaClient();
   }
 
-  return client;
+  return global.__trackYourGoldPrisma;
 }
 
 export const db = new Proxy({} as PrismaClient, {
-  get(_target, property, _receiver) {
-    const client = getPrismaClient();
-    const value = Reflect.get(client as unknown as object, property, client);
-    return typeof value === "function" ? value.bind(client) : value;
+  get(_target, prop) {
+    return getDb()[prop as keyof PrismaClient];
   }
 });
+
+export async function checkDatabase() {
+  if (!env.databaseUrl) {
+    return { ok: false, status: "unconfigured" as const };
+  }
+
+  try {
+    await getDb().$queryRawUnsafe("SELECT 1");
+    return { ok: true, status: "connected" as const };
+  } catch (error) {
+    return {
+      ok: false,
+      status: "error" as const,
+      message: error instanceof Error ? error.message : "Unknown database error"
+    };
+  }
+}
+
