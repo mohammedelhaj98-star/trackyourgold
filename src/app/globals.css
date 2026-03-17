@@ -352,6 +352,52 @@ select {
   justify-items: center;
 }
 
+.home-price-stage {
+  justify-items: center;
+  gap: 14px;
+}
+
+.home-price-stage__label {
+  margin: 0;
+  color: #d5dfec;
+  font-size: 0.96rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.home-price-stage h1 {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+}
+
+.home-price-stage__unit {
+  padding-bottom: 0.56rem;
+  color: var(--muted);
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.home-price-stage__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.home-price-stage__meta-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: #dbe7f5;
+  font-size: 0.84rem;
+}
+
 .home-eyebrow--centered {
   justify-self: center;
 }
@@ -1026,6 +1072,17 @@ select {
   .home-final-card--stacked {
     justify-items: flex-start;
     text-align: left;
+  }
+
+  .home-price-stage,
+  .home-price-stage__meta {
+    justify-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  .home-price-stage h1 {
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .home-trust-strip--centered,

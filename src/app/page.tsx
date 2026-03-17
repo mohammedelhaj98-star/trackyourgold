@@ -1,13 +1,92 @@
 import Link from "next/link";
+import type { RecommendationLabel } from "@prisma/client";
 
 import { getHomepageData, getPublishedContentPages } from "@/lib/cms";
+import { getHomepageMarketData } from "@/lib/home-market";
 
 export const revalidate = 300;
 
+function formatRecommendationLabel(label: string | RecommendationLabel | null) {
+  switch (label) {
+    case "STRONG_BUY":
+      return "Strong buy";
+    case "BUY":
+      return "Buy";
+    case "WAIT":
+      return "Wait";
+    case "AVOID":
+      return "Avoid";
+    default:
+      return "Signal pending";
+  }
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("en-QA", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+}
+
+function formatSignedPrice(value: number | null, currencyCode: string) {
+  if (value == null || Number.isNaN(value)) return "Building";
+
+  const absolute = Math.abs(value);
+  const prefix = value > 0 ? "+" : value < 0 ? "-" : "";
+  return `${prefix}${currencyCode} ${formatNumber(absolute)}`;
+}
+
+function formatUpdatedAt(value: Date | null) {
+  if (!value) return "Awaiting fresh data";
+
+  return new Intl.DateTimeFormat("en-QA", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(value);
+}
+
+function buildTrendPaths(points: number[]) {
+  const safePoints = points.length >= 2 ? points : [528, 534, 531, 539, 544, 549, 553];
+  const left = 24;
+  const right = 416;
+  const top = 52;
+  const bottom = 182;
+  const max = Math.max(...safePoints);
+  const min = Math.min(...safePoints);
+  const range = max - min || 1;
+  const coordinates = safePoints.map((value, index) => {
+    const x = left + ((right - left) * index) / (safePoints.length - 1);
+    const y = bottom - ((value - min) / range) * (bottom - top);
+    return { x, y };
+  });
+
+  let linePath = `M ${coordinates[0].x.toFixed(1)} ${coordinates[0].y.toFixed(1)}`;
+  for (let index = 1; index < coordinates.length - 1; index += 1) {
+    const midX = (coordinates[index].x + coordinates[index + 1].x) / 2;
+    const midY = (coordinates[index].y + coordinates[index + 1].y) / 2;
+    linePath += ` Q ${coordinates[index].x.toFixed(1)} ${coordinates[index].y.toFixed(1)} ${midX.toFixed(1)} ${midY.toFixed(1)}`;
+  }
+
+  const last = coordinates[coordinates.length - 1];
+  linePath += ` T ${last.x.toFixed(1)} ${last.y.toFixed(1)}`;
+
+  const areaPath = `${linePath} L ${last.x.toFixed(1)} 220 L ${coordinates[0].x.toFixed(1)} 220 Z`;
+
+  return {
+    linePath,
+    areaPath,
+    midPoint: coordinates[Math.floor(coordinates.length / 2)],
+    endPoint: last
+  };
+}
+
 export default async function HomePage() {
-  const [{ layout, page }, publishedPages] = await Promise.all([
+  const [{ layout, page }, publishedPages, market] = await Promise.all([
     getHomepageData(),
-    getPublishedContentPages(6)
+    getPublishedContentPages(6),
+    getHomepageMarketData()
   ]);
 
   const resetCopyTitle = "TrackYourGold is starting over on a cleaner foundation.";
@@ -33,10 +112,22 @@ export default async function HomePage() {
     heroBody[0] ??
     "The first screen should communicate whether buyers should lean in, wait, or look deeper, without forcing them through dense data first.";
 
-  const signalValue =
-    page.heroMetricLabel && page.heroMetricLabel !== "Reset baseline"
+  const signalValue = market?.recommendationLabel
+    ? formatRecommendationLabel(market.recommendationLabel)
+    : page.heroMetricLabel && page.heroMetricLabel !== "Reset baseline"
       ? page.heroMetricLabel
       : "Signal pending";
+  const priceHeadline = market
+    ? `${market.countryName} ${market.karatLabel} gold price`
+    : heroTitle;
+  const priceValue = market ? `${market.currencyCode} ${formatNumber(market.pricePerGram)}` : null;
+  const heroLead = market?.summaryText ?? heroSummary;
+  const changeValue = market ? formatSignedPrice(market.change24h, market.currencyCode) : null;
+  const premiumValue = market ? formatSignedPrice(market.premiumVsSpot, market.currencyCode) : null;
+  const spotValue = market?.spotEstimate != null ? `${market.currencyCode} ${formatNumber(market.spotEstimate)}` : "Pending";
+  const updatedAtLabel = market ? formatUpdatedAt(market.capturedAt) : "Awaiting fresh data";
+  const confidenceLabel = market?.confidenceBand ?? "Building";
+  const trendPaths = buildTrendPaths(market?.trendPoints ?? []);
 
   const productPillars = [
     {
@@ -66,18 +157,27 @@ export default async function HomePage() {
       <section className="hero home-hero home-hero--centered">
         <div className="home-hero__copy home-hero__copy--centered stack">
           <p className="eyebrow home-eyebrow--centered">{layout.eyebrow}</p>
-          <div className="home-hero__headline home-hero__headline--centered stack">
+          <div className="home-price-stage stack">
             <span className="home-kicker">Qatar-first daily gold intelligence</span>
-            <h1>{heroTitle}</h1>
-            <p className="home-hero__lead">{heroSummary}</p>
+            <p className="home-price-stage__label">{priceHeadline}</p>
+            <h1>
+              {priceValue ?? heroTitle}
+              {priceValue ? <span className="home-price-stage__unit"> / gram</span> : null}
+            </h1>
+            <div className="home-price-stage__meta">
+              <span className="home-price-stage__meta-pill">{signalValue}</span>
+              <span className="home-price-stage__meta-pill">{updatedAtLabel}</span>
+              {changeValue ? <span className="home-price-stage__meta-pill">{changeValue} 24h</span> : null}
+            </div>
           </div>
 
+          <p className="home-hero__lead">{heroLead}</p>
           <p className="home-hero__support">{heroSupport}</p>
 
           <div className="home-trust-strip home-trust-strip--centered">
-            <span className="home-trust-pill">Dark-mode first</span>
-            <span className="home-trust-pill">Answer-first UX</span>
-            <span className="home-trust-pill">CMS-owned pages</span>
+            <span className="home-trust-pill">{market?.karatLabel ?? "22K"} / gram</span>
+            <span className="home-trust-pill">{premiumValue ? `${premiumValue} vs spot` : "Premium visible"}</span>
+            <span className="home-trust-pill">{market ? `${spotValue} spot estimate` : "CMS-owned pages"}</span>
           </div>
 
           <div className="hero__actions home-hero__actions">
@@ -116,22 +216,23 @@ export default async function HomePage() {
               <span className="signal-answer__label">Current stance</span>
               <strong className="signal-answer__value">{signalValue}</strong>
               <p className="signal-answer__meta">
-                This card is the future decision surface: recommendation, premium context, and trend direction should all be readable inside one glance.
+                {market?.summaryText ??
+                  "This card is the future decision surface: recommendation, premium context, and trend direction should all be readable inside one glance."}
               </p>
             </div>
 
             <div className="signal-strip">
               <div className="signal-strip__item">
+                <span>24h move</span>
+                <strong>{changeValue ?? "Pending"}</strong>
+              </div>
+              <div className="signal-strip__item">
+                <span>Premium vs spot</span>
+                <strong>{premiumValue ?? "Pending"}</strong>
+              </div>
+              <div className="signal-strip__item">
                 <span>Confidence</span>
-                <strong>Clear</strong>
-              </div>
-              <div className="signal-strip__item">
-                <span>Premium</span>
-                <strong>Visible</strong>
-              </div>
-              <div className="signal-strip__item">
-                <span>Cadence</span>
-                <strong>Daily</strong>
+                <strong>{confidenceLabel}</strong>
               </div>
             </div>
           </article>
@@ -161,32 +262,42 @@ export default async function HomePage() {
                   <path d="M24 132 H416" className="chart-gridline" />
                   <path d="M24 82 H416" className="chart-gridline" />
                   <path
-                    d="M24 182 C 58 174, 82 160, 110 150 C 144 138, 174 112, 208 116 C 240 118, 274 152, 308 142 C 340 132, 368 98, 416 86 L 416 220 L 24 220 Z"
+                    d={trendPaths.areaPath}
                     fill="url(#homeChartFill)"
                   />
                   <path
-                    d="M24 182 C 58 174, 82 160, 110 150 C 144 138, 174 112, 208 116 C 240 118, 274 152, 308 142 C 340 132, 368 98, 416 86"
+                    d={trendPaths.linePath}
                     fill="none"
                     stroke="url(#homeChartLine)"
                     strokeWidth="4"
                     strokeLinecap="round"
                   />
-                  <circle cx="208" cy="116" r="6" className="chart-point" />
-                  <circle cx="416" cy="86" r="7" className="chart-point chart-point--accent" />
+                  <circle
+                    cx={trendPaths.midPoint.x.toFixed(1)}
+                    cy={trendPaths.midPoint.y.toFixed(1)}
+                    r="6"
+                    className="chart-point"
+                  />
+                  <circle
+                    cx={trendPaths.endPoint.x.toFixed(1)}
+                    cy={trendPaths.endPoint.y.toFixed(1)}
+                    r="7"
+                    className="chart-point chart-point--accent"
+                  />
                 </svg>
               </div>
 
               <div className="chart-caption">
-                <span>Trend should read at a glance</span>
-                <span>Minimal chart language</span>
+                <span>{market ? `${market.karatLabel} observed movement` : "Trend should read at a glance"}</span>
+                <span>{market ? `${spotValue} spot estimate` : "Minimal chart language"}</span>
               </div>
             </div>
 
             <div className="insight-panel__copy stack">
-              <p className="eyebrow">Why it feels cleaner</p>
-              <h3>Less surface area, stronger hierarchy.</h3>
+              <p className="eyebrow">Price first</p>
+              <h3>The number should land before the explanation.</h3>
               <p className="muted">
-                A centered hero and one primary decision board create a clear reading order. Supporting context comes after the signal, not beside it in competing blocks.
+                The homepage now leads with the actual gold price. Recommendation, premium, and movement sit underneath it so visitors understand the market in seconds.
               </p>
             </div>
           </article>
