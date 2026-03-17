@@ -1,9 +1,12 @@
 import Link from "next/link";
 
-import { getNavigationLinks } from "@/lib/cms";
+import type { NavigationLink } from "@/lib/cms";
 
-export async function SiteFooter() {
-  const navigation = await getNavigationLinks();
+type SiteFooterProps = {
+  navigation: NavigationLink[];
+};
+
+export function SiteFooter({ navigation }: SiteFooterProps) {
 
   return (
     <footer className="site-footer">

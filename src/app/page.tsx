@@ -1,15 +1,13 @@
 import Link from "next/link";
 
 import { getHomepageData, getPublishedContentPages } from "@/lib/cms";
-import { checkDatabase } from "@/lib/db";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export default async function HomePage() {
-  const [{ layout, page }, publishedPages, database] = await Promise.all([
+  const [{ layout, page }, publishedPages] = await Promise.all([
     getHomepageData(),
-    getPublishedContentPages(6),
-    checkDatabase()
+    getPublishedContentPages(6)
   ]);
 
   return (
@@ -37,11 +35,9 @@ export default async function HomePage() {
             <p className="muted">This baseline keeps the route surface intentionally small until Hostinger startup is proven stable.</p>
           </div>
           <div className="metric-card stack">
-            <p className="eyebrow">Database</p>
+            <p className="eyebrow">Health</p>
             <h3>{page.heroMetricLabel ?? "Existing MySQL schema kept intact"}</h3>
-            <span className={`status-pill ${database.ok ? "status-pill--healthy" : "status-pill--error"}`}>
-              {database.ok ? "Connected" : database.status}
-            </span>
+            <span className="status-pill status-pill--healthy">Use /health for live DB checks</span>
           </div>
           <div className="metric-card stack">
             <p className="eyebrow">CMS ownership</p>

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
 import { ContentStatus, type ContentPage, type SeoMetadata } from "@prisma/client";
 
 import { db } from "@/lib/db";
@@ -65,29 +66,74 @@ async function getSettingValue(key: string) {
   }
 }
 
+const getSettingValueCached = unstable_cache(
+  async (key: string) => getSettingValue(key),
+  ["setting-value"],
+  {
+    revalidate: 300,
+    tags: ["settings"]
+  }
+);
+
+const getHomepageRecordCached = unstable_cache(
+  async () => {
+    if (!hasDatabaseConfig()) return null;
+
+    try {
+      return await db.contentPage.findUnique({
+        where: { slug: "home" },
+        include: { seoMetadata: true }
+      });
+    } catch {
+      return null;
+    }
+  },
+  ["homepage-record"],
+  {
+    revalidate: 300,
+    tags: ["homepage", "content-pages"]
+  }
+);
+
+const getPublishedContentPagesCached = unstable_cache(
+  async (limit: number) => {
+    if (!hasDatabaseConfig()) return [];
+
+    try {
+      return await db.contentPage.findMany({
+        where: {
+          status: ContentStatus.PUBLISHED,
+          slug: { not: "home" }
+        },
+        orderBy: [{ publishAt: "desc" }, { updatedAt: "desc" }],
+        take: limit,
+        include: { seoMetadata: true }
+      });
+    } catch {
+      return [];
+    }
+  },
+  ["published-content-pages"],
+  {
+    revalidate: 300,
+    tags: ["content-pages"]
+  }
+);
+
 export async function getNavigationLinks() {
-  return parseJson(await getSettingValue("site.navigation"), defaultNavigation);
+  return parseJson(await getSettingValueCached("site.navigation"), defaultNavigation);
 }
 
 export async function getRedirectRules() {
-  return parseJson(await getSettingValue("site.redirects"), defaultRedirectRules);
+  return parseJson(await getSettingValueCached("site.redirects"), defaultRedirectRules);
 }
 
 export async function getHomepageLayout() {
-  return parseJson(await getSettingValue("site.homepage.layout"), defaultHomepageLayout);
+  return parseJson(await getSettingValueCached("site.homepage.layout"), defaultHomepageLayout);
 }
 
 export async function getHomepageRecord(): Promise<HomepageRecord | null> {
-  if (!hasDatabaseConfig()) return null;
-
-  try {
-    return await db.contentPage.findUnique({
-      where: { slug: "home" },
-      include: { seoMetadata: true }
-    });
-  } catch {
-    return null;
-  }
+  return getHomepageRecordCached();
 }
 
 export async function getHomepageData() {
@@ -120,19 +166,5 @@ export async function getHomepageData() {
 }
 
 export async function getPublishedContentPages(limit = 8) {
-  if (!hasDatabaseConfig()) return [];
-
-  try {
-    return await db.contentPage.findMany({
-      where: {
-        status: ContentStatus.PUBLISHED,
-        slug: { not: "home" }
-      },
-      orderBy: [{ publishAt: "desc" }, { updatedAt: "desc" }],
-      take: limit,
-      include: { seoMetadata: true }
-    });
-  } catch {
-    return [];
-  }
+  return getPublishedContentPagesCached(limit);
 }

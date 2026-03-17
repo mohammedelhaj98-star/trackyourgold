@@ -1,10 +1,12 @@
 import Link from "next/link";
 
-import { getCurrentUser } from "@/lib/auth/session";
-import { getNavigationLinks } from "@/lib/cms";
+import type { NavigationLink } from "@/lib/cms";
 
-export async function SiteHeader() {
-  const [user, navigation] = await Promise.all([getCurrentUser(), getNavigationLinks()]);
+type SiteHeaderProps = {
+  navigation: NavigationLink[];
+};
+
+export function SiteHeader({ navigation }: SiteHeaderProps) {
 
   return (
     <header className="site-header">
@@ -24,11 +26,10 @@ export async function SiteHeader() {
           ))}
         </nav>
         <div className="site-header__actions">
-          {user?.role === "ADMIN" ? <Link className="button button--secondary" href="/admin">Admin</Link> : null}
-          <Link className="button button--ghost" href="/login">{user ? "Switch account" : "Login"}</Link>
+          <Link className="button button--secondary" href="/admin">Admin</Link>
+          <Link className="button button--ghost" href="/login">Login</Link>
         </div>
       </div>
     </header>
   );
 }
-

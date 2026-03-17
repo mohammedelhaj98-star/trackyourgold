@@ -1,7 +1,7 @@
 "use server";
 
 import { ContentPageType, ContentStatus } from "@prisma/client";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
@@ -193,6 +193,12 @@ async function upsertFaqSeo(faqId: string, title: string | null, description: st
   });
 }
 
+function revalidateCmsSurface(...tags: string[]) {
+  for (const tag of tags) {
+    revalidateTag(tag);
+  }
+}
+
 export async function loginAction(formData: FormData) {
   if (!hasDatabaseConfig() || !hasSessionConfig()) {
     redirect("/login?error=Database%20and%20session%20configuration%20are%20required.");
@@ -269,6 +275,7 @@ export async function saveHomepageAction(formData: FormData) {
   ]);
 
   await logAdminAction(admin.id, "save-homepage", "ContentPage", page.id, { slug: "home" });
+  revalidateCmsSurface("settings", "homepage", "content-pages");
   revalidatePath("/");
   revalidatePath("/admin");
   redirect("/admin?message=Homepage%20saved.#homepage");
@@ -288,6 +295,7 @@ export async function saveNavigationAction(formData: FormData) {
   });
 
   await logAdminAction(admin.id, "save-navigation", "Setting", "site.navigation", { count: links.length });
+  revalidateCmsSurface("settings");
   revalidatePath("/");
   revalidatePath("/admin");
   redirect("/admin?message=Navigation%20saved.#navigation");
@@ -307,6 +315,7 @@ export async function saveRedirectRulesAction(formData: FormData) {
   });
 
   await logAdminAction(admin.id, "save-redirects", "Setting", "site.redirects", { count: rules.length });
+  revalidateCmsSurface("settings");
   revalidatePath("/admin");
   redirect("/admin?message=Redirect%20rules%20saved.#redirects");
 }
@@ -334,6 +343,7 @@ export async function createContentPageAction(formData: FormData) {
 
   await upsertContentSeo(page.id, optionalText(formData.get("seoTitle")), optionalText(formData.get("seoDescription")));
   await logAdminAction(admin.id, "create-page", "ContentPage", page.id, { slug });
+  revalidateCmsSurface("content-pages");
   revalidatePath("/");
   revalidatePath("/admin");
   redirect("/admin?message=Page%20created.#pages");
@@ -384,6 +394,7 @@ export async function updateContentPageAction(formData: FormData) {
   }
 
   await logAdminAction(admin.id, "update-page", "ContentPage", page.id, { slug: newSlug });
+  revalidateCmsSurface("content-pages", "settings");
   revalidatePath("/");
   revalidatePath("/admin");
   redirect("/admin?message=Page%20updated.#pages");
@@ -395,6 +406,7 @@ export async function deleteContentPageAction(formData: FormData) {
 
   await db.contentPage.delete({ where: { id: pageId } });
   await logAdminAction(admin.id, "delete-page", "ContentPage", pageId);
+  revalidateCmsSurface("content-pages");
   revalidatePath("/");
   revalidatePath("/admin");
   redirect("/admin?message=Page%20deleted.#pages");
@@ -421,6 +433,7 @@ export async function createArticleAction(formData: FormData) {
 
   await upsertArticleSeo(article.id, optionalText(formData.get("seoTitle")), optionalText(formData.get("seoDescription")));
   await logAdminAction(admin.id, "create-article", "BlogArticle", article.id, { slug });
+  revalidateCmsSurface("blog-articles");
   revalidatePath("/admin");
   redirect("/admin?message=Article%20created.#articles");
 }
@@ -447,6 +460,7 @@ export async function updateArticleAction(formData: FormData) {
 
   await upsertArticleSeo(article.id, optionalText(formData.get("seoTitle")), optionalText(formData.get("seoDescription")));
   await logAdminAction(admin.id, "update-article", "BlogArticle", article.id, { slug });
+  revalidateCmsSurface("blog-articles");
   revalidatePath("/admin");
   redirect("/admin?message=Article%20updated.#articles");
 }
@@ -457,6 +471,7 @@ export async function deleteArticleAction(formData: FormData) {
 
   await db.blogArticle.delete({ where: { id: articleId } });
   await logAdminAction(admin.id, "delete-article", "BlogArticle", articleId);
+  revalidateCmsSurface("blog-articles");
   revalidatePath("/admin");
   redirect("/admin?message=Article%20deleted.#articles");
 }
@@ -479,6 +494,7 @@ export async function createFaqAction(formData: FormData) {
 
   await upsertFaqSeo(faq.id, optionalText(formData.get("seoTitle")), optionalText(formData.get("seoDescription")));
   await logAdminAction(admin.id, "create-faq", "Faq", faq.id, { slug });
+  revalidateCmsSurface("faqs");
   revalidatePath("/admin");
   redirect("/admin?message=FAQ%20created.#faqs");
 }
@@ -503,6 +519,7 @@ export async function updateFaqAction(formData: FormData) {
 
   await upsertFaqSeo(faq.id, optionalText(formData.get("seoTitle")), optionalText(formData.get("seoDescription")));
   await logAdminAction(admin.id, "update-faq", "Faq", faq.id, { slug });
+  revalidateCmsSurface("faqs");
   revalidatePath("/admin");
   redirect("/admin?message=FAQ%20updated.#faqs");
 }
@@ -513,6 +530,7 @@ export async function deleteFaqAction(formData: FormData) {
 
   await db.faq.delete({ where: { id: faqId } });
   await logAdminAction(admin.id, "delete-faq", "Faq", faqId);
+  revalidateCmsSurface("faqs");
   revalidatePath("/admin");
   redirect("/admin?message=FAQ%20deleted.#faqs");
 }
@@ -532,6 +550,7 @@ export async function createCountryAction(formData: FormData) {
   });
 
   await logAdminAction(admin.id, "create-country", "Country", country.id, { slug: country.slug });
+  revalidateCmsSurface("taxonomy");
   revalidatePath("/admin");
   redirect("/admin?message=Country%20created.#taxonomy");
 }
@@ -549,6 +568,7 @@ export async function createCityAction(formData: FormData) {
   });
 
   await logAdminAction(admin.id, "create-city", "City", city.id, { slug: city.slug });
+  revalidateCmsSurface("taxonomy");
   revalidatePath("/admin");
   redirect("/admin?message=City%20created.#taxonomy");
 }
@@ -570,6 +590,7 @@ export async function createStoreAction(formData: FormData) {
   });
 
   await logAdminAction(admin.id, "create-store", "Store", store.id, { slug: store.slug });
+  revalidateCmsSurface("taxonomy");
   revalidatePath("/admin");
   redirect("/admin?message=Store%20created.#taxonomy");
 }
@@ -588,6 +609,7 @@ export async function saveSettingAction(formData: FormData) {
   });
 
   await logAdminAction(admin.id, "save-setting", "Setting", key);
+  revalidateCmsSurface("settings");
   revalidatePath("/admin");
   redirect("/admin?message=Setting%20saved.#settings");
 }

@@ -4,7 +4,7 @@ import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { getRedirectRules } from "@/lib/cms";
 import { splitBody, getPublishedContentPageBySlug } from "@/lib/content";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 type PageProps = {
   params: Promise<{
