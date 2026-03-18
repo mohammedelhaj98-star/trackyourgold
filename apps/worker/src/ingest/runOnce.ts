@@ -19,6 +19,71 @@ function buildUrl(host: string, path: string) {
   return new URL(normalizedPath, `https://${normalizedHost}`);
 }
 
+function buildCookieHeader(response: Response) {
+  const headersWithCookies = response.headers as Headers & { getSetCookie?: () => string[] };
+  const setCookies = typeof headersWithCookies.getSetCookie === "function"
+    ? headersWithCookies.getSetCookie()
+    : [];
+
+  if (setCookies.length > 0) {
+    return setCookies.map((cookie) => cookie.split(";")[0]).join("; ");
+  }
+
+  const singleCookie = response.headers.get("set-cookie");
+  if (!singleCookie) {
+    return "";
+  }
+
+  return singleCookie
+    .split(/,(?=[^;,]+=)/)
+    .map((cookie) => cookie.split(";")[0]?.trim())
+    .filter(Boolean)
+    .join("; ");
+}
+
+async function fetchRetailHtml(url: URL) {
+  const defaultHeaders = {
+    "user-agent": "trackyourgold-bot/1.0",
+    accept: "text/html,application/xhtml+xml"
+  };
+
+  const firstResponse = await fetch(url, {
+    redirect: "manual",
+    headers: defaultHeaders
+  });
+
+  if (firstResponse.ok) {
+    return {
+      response: firstResponse,
+      html: await firstResponse.text()
+    };
+  }
+
+  const location = firstResponse.headers.get("location");
+  const cookieHeader = buildCookieHeader(firstResponse);
+  if (!location || !cookieHeader || ![301, 302, 303, 307, 308].includes(firstResponse.status)) {
+    throw new Error(`Retail fetch failed with status ${firstResponse.status}`);
+  }
+
+  const followUpUrl = new URL(location, url);
+  const secondResponse = await fetch(followUpUrl, {
+    redirect: "manual",
+    headers: {
+      ...defaultHeaders,
+      cookie: cookieHeader
+    }
+  });
+
+  if (!secondResponse.ok) {
+    throw new Error(`Retail fetch failed with status ${secondResponse.status}`);
+  }
+
+  return {
+    response: secondResponse,
+    html: await secondResponse.text()
+  };
+}
+
 function getMarketProvider(): MarketProvider {
   const config = getWorkerConfig();
   const providerConfig = {
@@ -86,8 +151,8 @@ export async function ingestRetail() {
     }
   }
 
-  const response = await fetch(buildUrl(config.RETAIL_MALABAR_HOST, config.RETAIL_MALABAR_PATH));
-  const html = await response.text();
+  const retailUrl = buildUrl(config.RETAIL_MALABAR_HOST, config.RETAIL_MALABAR_PATH);
+  const { response, html } = await fetchRetailHtml(retailUrl);
   await storeRawSnapshot(source.id, html, response.headers.get("content-type") ?? "text/html", response.status);
 
   const parsed = parseMalabarQatarRates(html);
