@@ -121,6 +121,8 @@ Set these values before local or hosted runs:
 Useful direct commands:
 
 - `npm run build`
+- `npm run build:all`
+- `npm run start`
 - `npm run lint`
 - `npm run typecheck`
 - `npm test`
@@ -149,10 +151,11 @@ Useful direct commands:
 ### Hostinger
 
 1. Point the Node app at `apps/web`.
-2. Build the web app with `npm install && npm run build --workspace @trackyourgold/web`.
-3. Start the standalone server with `npm run start --workspace @trackyourgold/web`.
-4. Set only frontend-safe values on Hostinger, especially `API_BASE_URL`, `COOKIE_DOMAIN`, and defaults.
-5. Confirm the homepage renders even if Hostinger has no direct database access.
+2. Use the repo root for install/build/start.
+3. Build with `npm install && npm run build`.
+4. Start the standalone server with `npm run start`.
+5. Set only frontend-safe values on Hostinger, especially `API_BASE_URL`, `COOKIE_DOMAIN`, and defaults.
+6. Confirm the homepage renders even if Hostinger has no direct database access.
 
 ## Post-Deploy Verification
 
