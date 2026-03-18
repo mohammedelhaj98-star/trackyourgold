@@ -5,10 +5,12 @@ type GoldApiConfig = {
   baseUrl: string;
   apiKey: string;
   timeoutMs: number;
+  qarPerUsd: number;
 };
 
 type GoldApiPayload = {
   timestamp?: number;
+  currency?: string;
   price?: number | string;
   price_gram_24k?: number | string;
   price_gram_23k?: number | string;
@@ -44,6 +46,20 @@ function buildUrl(baseUrl: string, baseCurrency: "QAR") {
   return buildProviderUrl(`${normalized.replace(/\/+$/, "")}/api/XAU/${baseCurrency}`);
 }
 
+function convertToQar(value: number, sourceCurrency: string | undefined, qarPerUsd: number) {
+  const normalized = sourceCurrency?.toUpperCase() ?? "QAR";
+
+  if (normalized === "QAR") {
+    return value;
+  }
+
+  if (normalized === "USD") {
+    return value * qarPerUsd;
+  }
+
+  throw new Error(`Unsupported market currency ${normalized}`);
+}
+
 export class GoldApiProvider implements MarketProvider {
   constructor(private readonly config: GoldApiConfig) {}
 
@@ -75,17 +91,18 @@ export class GoldApiProvider implements MarketProvider {
         throw new Error(`Market provider error ${response.status}: missing usable gram prices`);
       }
 
+      const toQar = (value: number) => convertToQar(value, payload.currency, this.config.qarPerUsd);
       const ratesByKarat = {
-        "24K": price24k,
-        "23K": price23k ?? price24k * (23 / 24),
-        "22K": price22k,
-        "21K": price21k ?? price24k * (21 / 24),
-        "18K": price18k ?? price24k * (18 / 24),
-        "14K": price14k ?? price24k * (14 / 24),
-        "12K": price24k * (12 / 24),
-        "10K": price10k ?? price24k * (10 / 24),
-        "9K": price24k * (9 / 24),
-        "8K": price24k * (8 / 24)
+        "24K": toQar(price24k),
+        "23K": toQar(price23k ?? price24k * (23 / 24)),
+        "22K": toQar(price22k),
+        "21K": toQar(price21k ?? price24k * (21 / 24)),
+        "18K": toQar(price18k ?? price24k * (18 / 24)),
+        "14K": toQar(price14k ?? price24k * (14 / 24)),
+        "12K": toQar(price24k * (12 / 24)),
+        "10K": toQar(price10k ?? price24k * (10 / 24)),
+        "9K": toQar(price24k * (9 / 24)),
+        "8K": toQar(price24k * (8 / 24))
       };
 
       return {

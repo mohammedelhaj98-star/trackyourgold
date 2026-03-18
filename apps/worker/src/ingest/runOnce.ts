@@ -24,7 +24,8 @@ function getMarketProvider(): MarketProvider {
   const providerConfig = {
     baseUrl: config.MARKET_API_BASE_URL,
     apiKey: config.MARKET_API_KEY,
-    timeoutMs: config.MARKET_API_TIMEOUT_MS
+    timeoutMs: config.MARKET_API_TIMEOUT_MS,
+    qarPerUsd: config.MARKET_QAR_PER_USD
   };
 
   if (config.MARKET_API_PROVIDER === "gold_api") {

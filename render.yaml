@@ -41,11 +41,13 @@ services:
       - key: MARKET_API_PROVIDER
         value: gold_api
       - key: MARKET_API_BASE_URL
-        value: www.goldapi.io/api/XAU/QAR
+        value: www.goldapi.io/api/XAU/USD
       - key: MARKET_API_KEY
         sync: false
       - key: MARKET_API_TIMEOUT_MS
         value: "8000"
+      - key: MARKET_QAR_PER_USD
+        value: "3.64"
       - key: MARKET_INGEST_EVERY_MINUTES
         value: "720"
       - key: RETAIL_INGEST_EVERY_MINUTES
@@ -80,11 +82,13 @@ services:
       - key: MARKET_API_PROVIDER
         value: gold_api
       - key: MARKET_API_BASE_URL
-        value: www.goldapi.io/api/XAU/QAR
+        value: www.goldapi.io/api/XAU/USD
       - key: MARKET_API_KEY
         sync: false
       - key: MARKET_API_TIMEOUT_MS
         value: "8000"
+      - key: MARKET_QAR_PER_USD
+        value: "3.64"
       - key: MARKET_INGEST_EVERY_MINUTES
         value: "720"
       - key: RETAIL_INGEST_EVERY_MINUTES

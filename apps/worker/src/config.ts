@@ -9,6 +9,7 @@ const envSchema = z.object({
   MARKET_API_BASE_URL: z.string().min(1),
   MARKET_API_KEY: z.string().min(1),
   MARKET_API_TIMEOUT_MS: z.coerce.number().default(8000),
+  MARKET_QAR_PER_USD: z.coerce.number().default(3.64),
   MARKET_INGEST_EVERY_MINUTES: z.coerce.number().default(10),
   RETAIL_INGEST_EVERY_MINUTES: z.coerce.number().default(15),
   RETAIL_MALABAR_HOST: z.string().min(1),
