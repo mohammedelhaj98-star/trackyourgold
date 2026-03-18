@@ -154,8 +154,9 @@ Useful direct commands:
 2. Use the repo root for install/build/start.
 3. Build with `npm install && npm run build`.
 4. Start the standalone server with `npm run start`.
-5. Set only frontend-safe values on Hostinger, especially `API_BASE_URL`, `COOKIE_DOMAIN`, and defaults.
-6. Confirm the homepage renders even if Hostinger has no direct database access.
+5. The root build copies `apps/web/.next` to root `.next` so Hostinger can detect an output directory after the monorepo build.
+6. Set only frontend-safe values on Hostinger, especially `API_BASE_URL`, `COOKIE_DOMAIN`, and defaults.
+7. Confirm the homepage renders even if Hostinger has no direct database access.
 
 ## Post-Deploy Verification
 
