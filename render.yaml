@@ -4,7 +4,7 @@ services:
     runtime: node
     rootDir: .
     buildCommand: npm install && npm run db:generate && npm run build --workspace @trackyourgold/api
-    startCommand: npm run start --workspace @trackyourgold/api
+    startCommand: npx prisma migrate deploy --schema packages/db/prisma/schema.prisma && npm run start --workspace @trackyourgold/api
     envVars:
       - key: DATABASE_URL
         sync: false
