@@ -3,7 +3,7 @@ services:
     name: trackyourgold-api
     runtime: node
     rootDir: .
-    buildCommand: npm install && npm run db:generate && npm run build --workspace @trackyourgold/api
+    buildCommand: npm install && npm run db:generate && npm run build --workspace @trackyourgold/shared && npm run build --workspace @trackyourgold/db && npm run build --workspace @trackyourgold/api
     startCommand: npx prisma migrate deploy --schema packages/db/prisma/schema.prisma && npm run start --workspace @trackyourgold/api
     envVars:
       - key: DATABASE_URL
@@ -26,7 +26,7 @@ services:
     name: trackyourgold-ingest
     runtime: node
     rootDir: .
-    buildCommand: npm install && npm run db:generate && npm run build --workspace @trackyourgold/worker
+    buildCommand: npm install && npm run db:generate && npm run build --workspace @trackyourgold/shared && npm run build --workspace @trackyourgold/db && npm run build --workspace @trackyourgold/worker
     startCommand: npm run ingest:all --workspace @trackyourgold/worker
     schedule: "*/10 * * * *"
     envVars:
@@ -66,7 +66,7 @@ services:
     name: trackyourgold-worker
     runtime: node
     rootDir: .
-    buildCommand: npm install && npm run db:generate && npm run build --workspace @trackyourgold/worker
+    buildCommand: npm install && npm run db:generate && npm run build --workspace @trackyourgold/shared && npm run build --workspace @trackyourgold/db && npm run build --workspace @trackyourgold/worker
     startCommand: npm run daemon --workspace @trackyourgold/worker
     envVars:
       - key: DATABASE_URL
