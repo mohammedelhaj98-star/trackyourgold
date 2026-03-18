@@ -6,6 +6,9 @@ const prisma = new PrismaClient();
 async function main() {
   const adminEmail = process.env.SEED_ADMIN_EMAIL;
   const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+  const marketBaseUrl = process.env.MARKET_API_BASE_URL ?? "__MARKET_API_BASE_URL__";
+  const retailHost = process.env.RETAIL_MALABAR_HOST ?? "__RETAIL_MALABAR_HOST__";
+  const retailPath = process.env.RETAIL_MALABAR_PATH ?? "__RETAIL_MALABAR_PATH__";
 
   await prisma.market.upsert({
     where: { slug: "qatar" },
@@ -26,7 +29,7 @@ async function main() {
       code: "market_metalsapi",
       name: "Metals API",
       sourceType: "api",
-      host: "__MARKET_API_BASE_URL__",
+      host: marketBaseUrl,
       path: "/",
       fetchMethod: "api_json",
       scrapingRisk: "low",
@@ -42,8 +45,8 @@ async function main() {
       code: "retail_malabar",
       name: "Malabar Gold and Diamonds",
       sourceType: "retail_html",
-      host: "__RETAIL_MALABAR_HOST__",
-      path: "__RETAIL_MALABAR_PATH__",
+      host: retailHost,
+      path: retailPath,
       fetchMethod: "html_static",
       scrapingRisk: "medium",
       confidence: "medium",

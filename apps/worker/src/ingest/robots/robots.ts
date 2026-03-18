@@ -95,7 +95,16 @@ export function isPathAllowed(parsed: ParsedRobots, path: string, userAgent = "t
   return matchedAllow.length >= matchedDisallow.length;
 }
 
-export async function fetchRobots(db: PrismaClient, source: PriceSource, ttlHours: number) {
+export async function fetchRobots(
+  db: PrismaClient,
+  source: PriceSource,
+  ttlHours: number,
+  override?: { host?: string; path?: string }
+) {
+  const effectiveHost = override?.host?.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "") || source.host;
+  const effectivePath = override?.path
+    ? override.path.startsWith("/") ? override.path : `/${override.path}`
+    : source.path;
   const cached = await db.sourceRobotsCache.findFirst({
     where: {
       sourceId: source.id,
@@ -110,10 +119,10 @@ export async function fetchRobots(db: PrismaClient, source: PriceSource, ttlHour
     }
 
     const parsed = parseRobots(cached.robotsTxt);
-    return { allowed: isPathAllowed(parsed, source.path), parsed, reason: "cache" as const };
+    return { allowed: isPathAllowed(parsed, effectivePath), parsed, reason: "cache" as const };
   }
 
-  const response = await fetch(buildUrl(source.host, "/robots.txt"));
+  const response = await fetch(buildUrl(effectiveHost, "/robots.txt"));
   const robotsTxt = await response.text();
   let parsed: ParsedRobots | null = null;
   let allow = false;
@@ -124,7 +133,7 @@ export async function fetchRobots(db: PrismaClient, source: PriceSource, ttlHour
   } else {
     try {
       parsed = parseRobots(robotsTxt);
-      allow = isPathAllowed(parsed, source.path);
+      allow = isPathAllowed(parsed, effectivePath);
     } catch (error) {
       notes = error instanceof Error ? error.message : "robots_parse_error";
     }

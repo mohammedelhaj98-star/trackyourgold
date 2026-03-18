@@ -9,15 +9,31 @@ type GoldApiConfig = {
 
 type GoldApiPayload = {
   timestamp?: number;
-  price_gram_24k?: number;
-  price_gram_23k?: number;
-  price_gram_22k?: number;
-  price_gram_21k?: number;
-  price_gram_18k?: number;
-  price_gram_16k?: number;
-  price_gram_14k?: number;
-  price_gram_10k?: number;
+  price?: number | string;
+  price_gram_24k?: number | string;
+  price_gram_23k?: number | string;
+  price_gram_22k?: number | string;
+  price_gram_21k?: number | string;
+  price_gram_18k?: number | string;
+  price_gram_16k?: number | string;
+  price_gram_14k?: number | string;
+  price_gram_10k?: number | string;
 };
+
+const GRAMS_PER_TROY_OUNCE = 31.1034768;
+
+function parseNumber(value: number | string | undefined) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
 
 function buildUrl(baseUrl: string, baseCurrency: "QAR") {
   const normalized = normalizeProviderBaseUrl(baseUrl);
@@ -47,21 +63,29 @@ export class GoldApiProvider implements MarketProvider {
       const rawBody = await response.text();
       const payload = JSON.parse(rawBody) as GoldApiPayload;
 
-      if (!response.ok || !payload.price_gram_24k || !payload.price_gram_22k) {
-        throw new Error(`Market provider error ${response.status}`);
+      const price24k = parseNumber(payload.price_gram_24k) ?? (parseNumber(payload.price) ? parseNumber(payload.price)! / GRAMS_PER_TROY_OUNCE : null);
+      const price23k = parseNumber(payload.price_gram_23k);
+      const price22k = parseNumber(payload.price_gram_22k) ?? (price24k ? price24k * (22 / 24) : null);
+      const price21k = parseNumber(payload.price_gram_21k);
+      const price18k = parseNumber(payload.price_gram_18k);
+      const price14k = parseNumber(payload.price_gram_14k);
+      const price10k = parseNumber(payload.price_gram_10k);
+
+      if (!response.ok || !price24k || !price22k) {
+        throw new Error(`Market provider error ${response.status}: missing usable gram prices`);
       }
 
       const ratesByKarat = {
-        "24K": payload.price_gram_24k,
-        "23K": payload.price_gram_23k ?? payload.price_gram_24k * (23 / 24),
-        "22K": payload.price_gram_22k,
-        "21K": payload.price_gram_21k ?? payload.price_gram_24k * (21 / 24),
-        "18K": payload.price_gram_18k ?? payload.price_gram_24k * (18 / 24),
-        "14K": payload.price_gram_14k ?? payload.price_gram_24k * (14 / 24),
-        "12K": payload.price_gram_24k * (12 / 24),
-        "10K": payload.price_gram_10k ?? payload.price_gram_24k * (10 / 24),
-        "9K": payload.price_gram_24k * (9 / 24),
-        "8K": payload.price_gram_24k * (8 / 24)
+        "24K": price24k,
+        "23K": price23k ?? price24k * (23 / 24),
+        "22K": price22k,
+        "21K": price21k ?? price24k * (21 / 24),
+        "18K": price18k ?? price24k * (18 / 24),
+        "14K": price14k ?? price24k * (14 / 24),
+        "12K": price24k * (12 / 24),
+        "10K": price10k ?? price24k * (10 / 24),
+        "9K": price24k * (9 / 24),
+        "8K": price24k * (8 / 24)
       };
 
       return {

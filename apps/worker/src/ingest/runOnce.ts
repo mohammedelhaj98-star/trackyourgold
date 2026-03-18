@@ -63,7 +63,10 @@ export async function ingestRetail() {
     return { skipped: true, reason: "cadence" as const };
   }
 
-  const robots = await fetchRobots(db, source, config.ROBOTS_CACHE_TTL_HOURS);
+  const robots = await fetchRobots(db, source, config.ROBOTS_CACHE_TTL_HOURS, {
+    host: config.RETAIL_MALABAR_HOST,
+    path: config.RETAIL_MALABAR_PATH
+  });
   if (!robots.allowed) {
     await recordFailure(source.id, source.code, "compliance_blocked", null, config.ALERT_WEBHOOK_URL);
     return { skipped: true, reason: "compliance_blocked" as const };
