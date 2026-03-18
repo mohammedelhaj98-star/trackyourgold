@@ -1,0 +1,19 @@
+{
+  "name": "@trackyourgold/web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev",
+    "start": "node --single-threaded --v8-pool-size=1 .next/standalone/apps/web/server.js",
+    "lint": "eslint src --ext .ts,.tsx",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@trackyourgold/shared": "*",
+    "next": "^15.5.12",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  }
+}

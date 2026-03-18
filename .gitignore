@@ -1,7 +1,12 @@
 node_modules
 .next
+dist
+coverage
+.turbo
+.render
+.vercel
 .env
 .env.local
-tmp
+.env.production
 tsconfig.tsbuildinfo
-
+npm-debug.log*

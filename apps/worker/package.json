@@ -1,0 +1,24 @@
+{
+  "name": "@trackyourgold/worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "ingest:all": "tsx src/commands/ingestAll.ts",
+    "ingest:market": "tsx src/commands/ingestMarket.ts",
+    "ingest:retail": "tsx src/commands/ingestRetail.ts",
+    "daemon": "tsx src/index.ts",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@trackyourgold/db": "*",
+    "@trackyourgold/shared": "*",
+    "cheerio": "^1.0.0",
+    "zod": "^3.24.2"
+  }
+}
