@@ -1,39 +1,31 @@
 {
-  "name": "trackyourgold",
-  "version": "3.0.0",
+  "name": "trackyourgold-web",
+  "version": "1.0.0",
   "private": true,
   "packageManager": "npm@10.9.2",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
-    "dev": "turbo dev --filter=@trackyourgold/web",
-    "dev:web": "turbo dev --filter=@trackyourgold/web",
-    "dev:worker": "turbo dev --filter=@trackyourgold/worker",
-    "build": "npm run db:generate && turbo build --filter=@trackyourgold/web... && node scripts/sync-hostinger-output.mjs",
-    "build:all": "npm run db:generate && turbo build",
-    "start": "node --single-threaded --v8-pool-size=1 .next/standalone/apps/web/server.js",
-    "lint": "turbo lint",
-    "typecheck": "turbo typecheck",
-    "test": "turbo test",
-    "db:generate": "prisma generate --schema packages/db/prisma/schema.prisma",
-    "db:migrate": "prisma migrate deploy --schema packages/db/prisma/schema.prisma",
-    "db:seed": "tsx packages/db/prisma/seed.ts",
-    "worker:ingest:all": "npm run ingest:all --workspace @trackyourgold/worker",
-    "worker:daemon": "npm run daemon --workspace @trackyourgold/worker"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "node --single-threaded --v8-pool-size=1 .next/standalone/server.js",
+    "lint": "eslint src --ext .ts,.tsx",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "next": "^15.5.12",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",
     "@types/node": "^22.13.10",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
     "eslint": "^9.22.0",
     "globals": "^16.0.0",
-    "prisma": "^6.19.2",
-    "prettier": "^3.5.3",
-    "tsx": "^4.19.3",
-    "turbo": "^2.5.0",
     "typescript": "^5.8.2",
-    "typescript-eslint": "^8.26.1",
-    "vitest": "^3.0.8"
+    "typescript-eslint": "^8.26.1"
   }
 }
