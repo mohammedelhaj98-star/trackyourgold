@@ -39,15 +39,15 @@ services:
       - key: APP_DEFAULT_CURRENCY
         value: QAR
       - key: MARKET_API_PROVIDER
-        value: metals_api
+        value: gold_api
       - key: MARKET_API_BASE_URL
-        sync: false
+        value: www.goldapi.io/api/XAU/QAR
       - key: MARKET_API_KEY
         sync: false
       - key: MARKET_API_TIMEOUT_MS
         value: "8000"
       - key: MARKET_INGEST_EVERY_MINUTES
-        value: "10"
+        value: "720"
       - key: RETAIL_INGEST_EVERY_MINUTES
         value: "15"
       - key: RETAIL_MALABAR_HOST
@@ -78,15 +78,15 @@ services:
       - key: APP_DEFAULT_CURRENCY
         value: QAR
       - key: MARKET_API_PROVIDER
-        value: metals_api
+        value: gold_api
       - key: MARKET_API_BASE_URL
-        sync: false
+        value: www.goldapi.io/api/XAU/QAR
       - key: MARKET_API_KEY
         sync: false
       - key: MARKET_API_TIMEOUT_MS
         value: "8000"
       - key: MARKET_INGEST_EVERY_MINUTES
-        value: "10"
+        value: "720"
       - key: RETAIL_INGEST_EVERY_MINUTES
         value: "15"
       - key: RETAIL_MALABAR_HOST

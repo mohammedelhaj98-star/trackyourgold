@@ -10,3 +10,11 @@ export type MarketProviderResult = {
 export type MarketProvider = {
   getMarketCaratRates(baseCurrency: "QAR"): Promise<MarketProviderResult>;
 };
+
+export function normalizeProviderBaseUrl(baseUrl: string) {
+  return baseUrl.trim().replace(/^https?:\/\//i, "");
+}
+
+export function buildProviderUrl(baseUrl: string) {
+  return new URL(`https://${normalizeProviderBaseUrl(baseUrl)}`);
+}

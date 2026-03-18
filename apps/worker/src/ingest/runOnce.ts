@@ -7,13 +7,31 @@ import { db } from "../db/prisma.js";
 import { logger } from "../logger.js";
 import { finishRun, recordFailure, recordSuccess, startRun } from "./health/health.js";
 import { getLastNormalized, getSource, persistNormalizedRates, shouldRun, storeRawSnapshot } from "./normalize/normalize.js";
+import { GoldApiProvider } from "./providers/market/goldApi.js";
 import { MetalsApiProvider } from "./providers/market/metalsApi.js";
+import type { MarketProvider } from "./providers/market/provider.js";
 import { parseMalabarQatarRates } from "./providers/retail/malabar.js";
 import { fetchRobots } from "./robots/robots.js";
 
 function buildUrl(host: string, path: string) {
-  const scheme = "https:";
-  return new URL(path, `${scheme}//${host}`);
+  const normalizedHost = host.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return new URL(normalizedPath, `https://${normalizedHost}`);
+}
+
+function getMarketProvider(): MarketProvider {
+  const config = getWorkerConfig();
+  const providerConfig = {
+    baseUrl: config.MARKET_API_BASE_URL,
+    apiKey: config.MARKET_API_KEY,
+    timeoutMs: config.MARKET_API_TIMEOUT_MS
+  };
+
+  if (config.MARKET_API_PROVIDER === "gold_api") {
+    return new GoldApiProvider(providerConfig);
+  }
+
+  return new MetalsApiProvider(providerConfig);
 }
 
 export async function ingestMarket() {
@@ -23,12 +41,7 @@ export async function ingestMarket() {
     return { skipped: true, reason: "cadence" as const };
   }
 
-  const provider = new MetalsApiProvider({
-    baseUrl: config.MARKET_API_BASE_URL,
-    apiKey: config.MARKET_API_KEY,
-    timeoutMs: config.MARKET_API_TIMEOUT_MS
-  });
-
+  const provider = getMarketProvider();
   const result = await provider.getMarketCaratRates("QAR");
   await storeRawSnapshot(source.id, result.rawBody, result.contentType, result.status);
   await persistNormalizedRates({

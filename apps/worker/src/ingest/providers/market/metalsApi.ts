@@ -1,4 +1,5 @@
 import type { MarketProvider, MarketProviderResult } from "./provider.js";
+import { buildProviderUrl } from "./provider.js";
 
 type MetalsApiConfig = {
   baseUrl: string;
@@ -7,8 +8,7 @@ type MetalsApiConfig = {
 };
 
 function buildUrl(baseUrl: string) {
-  const scheme = "https:";
-  const url = new URL(`${scheme}//${baseUrl}`);
+  const url = buildProviderUrl(baseUrl);
   url.searchParams.set("base", "QAR");
   url.searchParams.set("symbols", "XAU");
   return url;
@@ -22,7 +22,7 @@ export class MetalsApiProvider implements MarketProvider {
     const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
     const url = buildUrl(this.config.baseUrl);
     url.searchParams.set("base", baseCurrency);
-    url.searchParams.set("api_key", this.config.apiKey);
+    url.searchParams.set("access_key", this.config.apiKey);
 
     try {
       const response = await fetch(url, { signal: controller.signal });
