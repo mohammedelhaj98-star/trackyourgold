@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { signupAction } from "../../../lib/actions";
@@ -14,25 +15,29 @@ export default async function SignUpPage({ params }: { params: Promise<{ locale:
   return (
     <section className="auth-shell">
       <article className="auth-side">
-        <p className="eyebrow">{copy.signupEyebrow}</p>
-        <h1 className="section-title">{copy.signupTitle}</h1>
-        <p className="muted">{copy.signupIntro}</p>
+        <p className="eyebrow">{copy.auth.signupEyebrow}</p>
+        <h1 className="section-title">{copy.auth.signupTitle}</h1>
+        <p className="muted">{copy.auth.signupIntro}</p>
       </article>
 
       <section className="form-card stack">
-        <p className="eyebrow">{copy.signupEyebrow}</p>
         <form className="form" action={signupAction}>
           <input type="hidden" name="locale" value={locale} />
           <div className="field">
-            <label htmlFor="email">{copy.email}</label>
+            <label htmlFor="email">{copy.auth.email}</label>
             <input id="email" name="email" type="email" required />
           </div>
           <div className="field">
-            <label htmlFor="password">{copy.password}</label>
+            <label htmlFor="password">{copy.auth.password}</label>
             <input id="password" name="password" type="password" required />
           </div>
-          <button type="submit">{copy.navSignup}</button>
+          <button type="submit">{copy.nav.signup}</button>
         </form>
+        <p className="muted">
+          <Link href={`/${locale}/login`} className="link-inline">
+            {copy.nav.login}
+          </Link>
+        </p>
       </section>
     </section>
   );

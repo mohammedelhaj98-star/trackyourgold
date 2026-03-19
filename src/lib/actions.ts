@@ -2,8 +2,10 @@
 
 import { redirect } from "next/navigation";
 
-import { apiFetch, readJson } from "./api";
 import { clearSession, setSession } from "./auth";
+import { apiFetch, readJson } from "./api";
+import { inferCategory, inferHoldingName, parseTags, serializeHoldingNotes } from "./portfolio";
+import { saveUiPreferences } from "./preferences";
 
 function toText(formData: FormData, key: string, fallback = "") {
   const raw = formData.get(key);
@@ -15,7 +17,55 @@ function toNumber(formData: FormData, key: string, fallback = 0) {
   if (typeof raw !== "string" || raw.length === 0) {
     return fallback;
   }
-  return Number(raw);
+
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function toBoolean(formData: FormData, key: string, fallback = false) {
+  const raw = toText(formData, key, String(fallback));
+  return raw === "true";
+}
+
+function todayValue() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function buildVaultItemPayload(formData: FormData) {
+  const grams = toNumber(formData, "grossWeightG");
+  const karat = toNumber(formData, "purityKarat", 22);
+  const tags = parseTags(toText(formData, "tags"));
+  const purchaseBasisEnabled = toBoolean(formData, "purchaseBasisEnabled", false);
+  const purchasePriceMode = toText(formData, "purchasePriceMode", "total") === "per_gram" ? "per_gram" : "total";
+  const purchasePriceValue = toNumber(formData, "purchasePriceValue");
+  const purchaseDateInput = toText(formData, "purchaseDate");
+  const purchaseDateProvided = purchaseBasisEnabled && purchaseDateInput.length > 0;
+  const purchaseTotalPriceQar = purchaseBasisEnabled
+    ? purchasePriceMode === "per_gram"
+      ? purchasePriceValue * grams
+      : purchasePriceValue
+    : 0.01;
+
+  return {
+    itemName: inferHoldingName(toText(formData, "itemName"), grams, karat, tags),
+    category: inferCategory(tags),
+    purityKarat: karat,
+    grossWeightG: grams,
+    stoneWeightG: 0,
+    purchaseDate: purchaseDateProvided ? purchaseDateInput : todayValue(),
+    purchaseTotalPriceQar: Math.max(Number(purchaseTotalPriceQar.toFixed(2)), 0.01),
+    makingChargesQar: 0,
+    vatQar: 0,
+    purchaseStoreName: "",
+    purchaseLocation: "",
+    purchaseNotes: serializeHoldingNotes({
+      tags,
+      purchaseBasis: purchaseBasisEnabled ? "known" : "none",
+      purchasePriceMode,
+      purchaseDateProvided,
+      notes: toText(formData, "purchaseNotes")
+    })
+  };
 }
 
 export async function signupAction(formData: FormData) {
@@ -35,7 +85,7 @@ export async function signupAction(formData: FormData) {
   }>(response);
 
   await setSession(payload.session);
-  redirect(`/${locale}/dashboard`);
+  redirect(`/${locale}`);
 }
 
 export async function loginAction(formData: FormData) {
@@ -54,14 +104,18 @@ export async function loginAction(formData: FormData) {
   }>(response);
 
   await setSession(payload.session);
-  redirect(`/${locale}/dashboard`);
+  redirect(`/${locale}`);
 }
 
 export async function logoutAction(locale: string) {
-  await apiFetch("/v1/auth/logout", {
-    method: "POST"
-  });
-  await clearSession();
+  try {
+    await apiFetch("/v1/auth/logout", {
+      method: "POST"
+    });
+  } finally {
+    await clearSession();
+  }
+
   redirect(`/${locale}`);
 }
 
@@ -81,53 +135,41 @@ export async function createVaultAction(formData: FormData) {
 export async function createItemAction(formData: FormData) {
   const locale = toText(formData, "locale", "en");
   const vaultId = toText(formData, "vaultId");
-  const response = await apiFetch(`/v1/vaults/${vaultId}/items`, {
-    method: "POST",
-    body: JSON.stringify({
-      itemName: toText(formData, "itemName"),
-      category: toText(formData, "category", "JEWELRY"),
-      purityKarat: toNumber(formData, "purityKarat", 22),
-      grossWeightG: toNumber(formData, "grossWeightG"),
-      stoneWeightG: toNumber(formData, "stoneWeightG"),
-      purchaseDate: toText(formData, "purchaseDate"),
-      purchaseTotalPriceQar: toNumber(formData, "purchaseTotalPriceQar"),
-      makingChargesQar: toNumber(formData, "makingChargesQar"),
-      vatQar: toNumber(formData, "vatQar"),
-      purchaseStoreName: toText(formData, "purchaseStoreName"),
-      purchaseLocation: toText(formData, "purchaseLocation"),
-      purchaseNotes: toText(formData, "purchaseNotes")
-    })
-  });
 
-  await readJson(response);
-  redirect(`/${locale}/vaults/${vaultId}`);
+  await readJson(
+    await apiFetch(`/v1/vaults/${vaultId}/items`, {
+      method: "POST",
+      body: JSON.stringify(buildVaultItemPayload(formData))
+    })
+  );
+
+  redirect(`/${locale}?added=1`);
 }
 
 export async function updateItemAction(itemId: string, locale: string, formData: FormData) {
-  await apiFetch(`/v1/items/${itemId}`, {
-    method: "PATCH",
-    body: JSON.stringify({
-      itemName: toText(formData, "itemName"),
-      category: toText(formData, "category", "JEWELRY"),
-      purityKarat: toNumber(formData, "purityKarat", 22),
-      grossWeightG: toNumber(formData, "grossWeightG"),
-      stoneWeightG: toNumber(formData, "stoneWeightG"),
-      purchaseDate: toText(formData, "purchaseDate"),
-      purchaseTotalPriceQar: toNumber(formData, "purchaseTotalPriceQar"),
-      makingChargesQar: toNumber(formData, "makingChargesQar"),
-      vatQar: toNumber(formData, "vatQar"),
-      purchaseStoreName: toText(formData, "purchaseStoreName"),
-      purchaseLocation: toText(formData, "purchaseLocation"),
-      purchaseNotes: toText(formData, "purchaseNotes")
+  await readJson(
+    await apiFetch(`/v1/items/${itemId}`, {
+      method: "PATCH",
+      body: JSON.stringify(buildVaultItemPayload(formData))
     })
-  });
+  );
 
-  redirect(`/${locale}/items/${itemId}`);
+  redirect(`/${locale}/items/${itemId}?saved=1`);
 }
 
 export async function deleteItemAction(itemId: string, locale: string) {
   await apiFetch(`/v1/items/${itemId}`, {
     method: "DELETE"
   });
-  redirect(`/${locale}/dashboard`);
+  redirect(`/${locale}/vaults?deleted=1`);
+}
+
+export async function savePreferencesAction(locale: string, formData: FormData) {
+  await saveUiPreferences({
+    showRetailComparison: toBoolean(formData, "showRetailComparison", true),
+    showGainLossWhenBasisExists: toBoolean(formData, "showGainLossWhenBasisExists", true),
+    reduceMotion: toBoolean(formData, "reduceMotion", false)
+  });
+
+  redirect(`/${locale}/settings?saved=1` as never);
 }

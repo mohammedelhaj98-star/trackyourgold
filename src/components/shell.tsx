@@ -2,14 +2,29 @@ import Link from "next/link";
 
 import type { PropsWithChildren } from "react";
 
+import { logoutAction } from "../lib/actions";
 import { getOtherLocale, messages, type Locale } from "../lib/i18n";
+import type { UiPreferences } from "../lib/preferences";
+import { AppNav } from "./app-nav";
 
-export function Shell({ children, locale }: PropsWithChildren<{ locale: Locale }>) {
+export type ShellUser = {
+  user: { id: string; email: string; language: string };
+  defaultVaultId: string | null;
+} | null;
+
+export function Shell({
+  children,
+  locale,
+  me,
+  preferences
+}: PropsWithChildren<{ locale: Locale; me: ShellUser; preferences: UiPreferences }>) {
   const copy = messages[locale];
   const otherLocale = getOtherLocale(locale);
+  const boundLogout = logoutAction.bind(null, locale);
+  const addHref = me?.defaultVaultId ? `/${locale}/items/new?vaultId=${me.defaultVaultId}` : `/${locale}/items/new`;
 
   return (
-    <div className="chrome">
+    <div className="chrome" data-reduce-motion={preferences.reduceMotion ? "true" : "false"}>
       <header className="topbar">
         <div className="brand-block">
           <Link href={`/${locale}`} className="brand">
@@ -19,30 +34,58 @@ export function Shell({ children, locale }: PropsWithChildren<{ locale: Locale }
         </div>
 
         <div className="topbar-actions">
-          <nav className="nav">
-            <Link className="nav-link" href={`/${locale}/dashboard`}>
-              {copy.navDashboard}
-            </Link>
-            <Link className="nav-link" href={`/${locale}/vaults`}>
-              {copy.navVaults}
-            </Link>
-            <Link className="nav-link" href={`/${locale}/sources`}>
-              {copy.navSources}
-            </Link>
-          </nav>
+          <AppNav
+            locale={locale}
+            authenticated={Boolean(me)}
+            labels={{
+              home: copy.nav.home,
+              portfolio: copy.nav.portfolio,
+              progress: copy.nav.progress,
+              settings: copy.nav.settings
+            }}
+          />
 
-          <div className="topbar-actions">
+          <div className="topbar-cta">
             <Link className="locale-link" href={`/${otherLocale}`}>
               {copy.localeSwitch}
             </Link>
-            <Link className="button button--ghost button--compact" href={`/${locale}/login`}>
-              {copy.navLogin}
-            </Link>
+
+            {me ? (
+              <>
+                <Link className="button button--ghost button--compact" href={addHref as never}>
+                  {copy.nav.addGold}
+                </Link>
+                <form action={boundLogout}>
+                  <button type="submit" className="button button--ghost button--compact">
+                    {copy.nav.logout}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <Link className="button button--ghost button--compact" href={`/${locale}/login`}>
+                  {copy.nav.login}
+                </Link>
+                <Link className="button button--compact" href={`/${locale}/signup`}>
+                  {copy.nav.signup}
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
 
       <main className="page-shell">{children}</main>
+      <AppNav
+        locale={locale}
+        authenticated={Boolean(me)}
+        labels={{
+          home: copy.nav.home,
+          portfolio: copy.nav.portfolio,
+          progress: copy.nav.progress,
+          settings: copy.nav.settings
+        }}
+      />
     </div>
   );
 }

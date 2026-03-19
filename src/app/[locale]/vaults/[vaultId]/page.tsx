@@ -1,15 +1,30 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { RangeTabs } from "../../../../components/range-tabs";
+import { ValueChart } from "../../../../components/value-chart";
 import { apiFetch, readJson } from "../../../../lib/api";
 import { requireUser } from "../../../../lib/auth";
-import { currency, formatDate } from "../../../../lib/format";
+import { currency, formatDate, formatNumber, formatSignedCurrency } from "../../../../lib/format";
 import { isLocale, messages } from "../../../../lib/i18n";
+import {
+  aggregatePortfolioHistory,
+  coerceRangeDays,
+  fetchLatestRates,
+  fetchQuoteHistory,
+  fetchVaultItems,
+  normalizeHolding,
+  summarizePortfolio,
+  type ApiVault
+} from "../../../../lib/portfolio";
+import { getUiPreferences } from "../../../../lib/preferences";
 
 export default async function VaultDetailPage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ locale: string; vaultId: string }>;
+  searchParams: Promise<{ range?: string }>;
 }) {
   const { locale, vaultId } = await params;
   if (!isLocale(locale)) {
@@ -18,59 +33,94 @@ export default async function VaultDetailPage({
 
   await requireUser(locale);
   const copy = messages[locale];
-  const [vault, items, valuation] = await Promise.all([
-    readJson<{ vault: { id: string; name: string } }>(await apiFetch(`/v1/vaults/${vaultId}`)),
-    readJson<{ items: Array<{ id: string; itemName: string; purityKarat: number; netGoldWeightG: number; purchaseTotalPriceQar: number }> }>(
-      await apiFetch(`/v1/vaults/${vaultId}/items`)
-    ),
-    readJson<{ asOf: string; totals: { totalValueQar: number; totalPlQar: number } }>(
-      await apiFetch(`/v1/vaults/${vaultId}/valuation?mode=intrinsic`)
-    )
+  const preferences = await getUiPreferences();
+  const rangeDays = coerceRangeDays((await searchParams).range);
+
+  const [vaultPayload, items, marketRates, history] = await Promise.all([
+    readJson<{ vault: ApiVault }>(await apiFetch(`/v1/vaults/${vaultId}`)),
+    fetchVaultItems(vaultId),
+    fetchLatestRates("market"),
+    fetchQuoteHistory(rangeDays, "market")
   ]);
 
+  const holdings = items.map((item) => normalizeHolding(item, vaultPayload.vault, marketRates));
+  const summary = summarizePortfolio(holdings, marketRates);
+  const chartPoints = aggregatePortfolioHistory(holdings, history);
+
   return (
-    <div className="stack stack--page">
-      <section className="section-banner">
+    <div className="dashboard-grid">
+      <section className="content-card stack">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">{vault.vault.name}</p>
-            <h1 className="section-title">{currency(valuation.totals.totalValueQar, locale)}</h1>
+            <p className="eyebrow">{vaultPayload.vault.name}</p>
+            <h1 className="section-title">{vaultPayload.vault.name}</h1>
           </div>
-          <span className="panel-chip">{items.items.length} items</span>
+          <span className="panel-chip">{holdings.length}</span>
         </div>
-        <p className={valuation.totals.totalPlQar >= 0 ? "status-good" : "status-bad"}>
-          {currency(valuation.totals.totalPlQar, locale)} · {formatDate(valuation.asOf, locale)}
-        </p>
+
+        <div className="metric-grid metric-grid--compact">
+          <div className="metric-card">
+            <span className="muted">{copy.common.totalValue}</span>
+            <strong>{currency(summary.portfolioValueQar, locale)}</strong>
+          </div>
+          <div className="metric-card">
+            <span className="muted">{copy.common.fineGoldGrams}</span>
+            <strong>{formatNumber(summary.fineGoldGrams, locale, 2)}g</strong>
+          </div>
+          <div className="metric-card">
+            <span className="muted">{copy.common.lastUpdated}</span>
+            <strong>{formatDate(summary.lastUpdated, locale)}</strong>
+          </div>
+        </div>
+
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">{copy.home.chartPortfolio}</p>
+            <h2 className="panel-title">{copy.home.chartPortfolio}</h2>
+          </div>
+          <RangeTabs currentDays={rangeDays} hrefForDays={(days) => `/${locale}/vaults/${vaultId}?range=${days}`} />
+        </div>
+        <ValueChart locale={locale} points={chartPoints} emptyLabel={copy.common.noData} />
+
         <div className="button-row">
           <Link className="button" href={`/${locale}/items/new?vaultId=${vaultId}`}>
-            {copy.addItem}
+            {copy.nav.addGold}
+          </Link>
+          <Link className="button button--ghost" href={`/${locale}/vaults`}>
+            {copy.nav.portfolio}
           </Link>
         </div>
       </section>
 
-      <section className="content-card stack">
+      <aside className="content-card stack">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">{copy.trackedPieces}</p>
-            <h2 className="panel-title">{copy.trackedPieces}</h2>
+            <p className="eyebrow">{copy.home.recentHoldings}</p>
+            <h2 className="panel-title">{copy.home.recentHoldings}</h2>
           </div>
         </div>
+
         <div className="list list--rows">
-          {items.items.map((item) => (
-            <Link key={item.id} href={`/${locale}/items/${item.id}`} className="item-card item-card--row">
+          {holdings.map((holding) => (
+            <Link key={holding.id} href={`/${locale}/items/${holding.id}`} className="item-card item-card--row">
               <div className="row-main">
-                <strong>{item.itemName}</strong>
+                <strong>{holding.name}</strong>
                 <span className="muted">
-                  {item.purityKarat}K · {item.netGoldWeightG}g
+                  {holding.karat}K · {formatNumber(holding.grams, locale, 2)}g
                 </span>
               </div>
               <div className="row-end">
-                <span>{currency(item.purchaseTotalPriceQar, locale)}</span>
+                <span>{currency(holding.worthNowQar, locale)}</span>
+                {preferences.showGainLossWhenBasisExists && holding.gainLossQar !== null ? (
+                  <span className={holding.gainLossQar >= 0 ? "status-good" : "status-bad"}>
+                    {formatSignedCurrency(holding.gainLossQar, locale)}
+                  </span>
+                ) : null}
               </div>
             </Link>
           ))}
         </div>
-      </section>
+      </aside>
     </div>
   );
 }

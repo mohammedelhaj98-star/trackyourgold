@@ -1,15 +1,27 @@
 import { notFound } from "next/navigation";
 
+import { HoldingForm } from "../../../../components/holding-form";
+import { RangeTabs } from "../../../../components/range-tabs";
+import { ValueChart } from "../../../../components/value-chart";
 import { deleteItemAction, updateItemAction } from "../../../../lib/actions";
-import { apiFetch, readJson } from "../../../../lib/api";
 import { requireUser } from "../../../../lib/auth";
-import { currency } from "../../../../lib/format";
+import { currency, formatDate, formatNumber, formatSignedCurrency } from "../../../../lib/format";
 import { isLocale, messages } from "../../../../lib/i18n";
+import {
+  buildHoldingHistory,
+  coerceRangeDays,
+  fetchQuoteHistory,
+  loadPortfolioState,
+  parseHoldingNotes
+} from "../../../../lib/portfolio";
+import { getUiPreferences } from "../../../../lib/preferences";
 
 export default async function ItemDetailPage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ locale: string; itemId: string }>;
+  searchParams: Promise<{ range?: string; saved?: string }>;
 }) {
   const { locale, itemId } = await params;
   if (!isLocale(locale)) {
@@ -18,128 +30,197 @@ export default async function ItemDetailPage({
 
   await requireUser(locale);
   const copy = messages[locale];
-  const item = await readJson<{
-    item: {
-      id: string;
-      itemName: string;
-      category: string;
-      purityKarat: number;
-      grossWeightG: number;
-      stoneWeightG: number;
-      purchaseDate: string;
-      purchaseTotalPriceQar: number;
-      makingChargesQar: number;
-      vatQar: number;
-      purchaseStoreName: string | null;
-      purchaseLocation: string | null;
-      purchaseNotes: string | null;
-    };
-  }>(await apiFetch(`/v1/items/${itemId}`));
+  const preferences = await getUiPreferences();
+  const { range, saved } = await searchParams;
+  const rangeDays = coerceRangeDays(range);
+  const [{ holdings, summary, marketRates }, history] = await Promise.all([loadPortfolioState(), fetchQuoteHistory(rangeDays)]);
 
+  const holding = holdings.find((item) => item.id === itemId);
+  if (!holding) {
+    notFound();
+  }
+
+  const notesMeta = parseHoldingNotes(holding.rawItem.purchaseNotes);
+  const chartPoints = buildHoldingHistory(holding, history);
   const boundUpdate = updateItemAction.bind(null, itemId, locale);
   const boundDelete = deleteItemAction.bind(null, itemId, locale);
 
   return (
-    <div className="split split--wide">
-      <section className="form-card stack">
-        <p className="eyebrow">{copy.itemDetail}</p>
-        <h1 className="section-title">{item.item.itemName}</h1>
-        <p className="muted">{copy.itemDetailIntro}</p>
-        <form className="form" action={boundUpdate}>
-          <div className="field">
-            <label htmlFor="itemName">Item name</label>
-            <input id="itemName" name="itemName" defaultValue={item.item.itemName} required />
+    <div className="stack stack--page">
+      {saved === "1" ? (
+        <div className="notice notice--success">
+          <strong>{copy.settings.preferencesSaved}</strong>
+        </div>
+      ) : null}
+
+      <section className="dashboard-grid">
+        <article className="hero-surface hero-surface--primary stack">
+          <div className="hero-heading">
+            <div>
+              <p className="eyebrow">{copy.holding.title}</p>
+              <h1 className="hero-title">{holding.name}</h1>
+            </div>
+            <span className={`status-pill ${marketRates.stale ? "status-pill--soft" : "status-pill--live"}`}>
+              {marketRates.stale ? copy.common.staleData : copy.common.freshData}
+            </span>
           </div>
-          <div className="split">
-            <div className="field">
-              <label htmlFor="category">{copy.category}</label>
-              <select id="category" name="category" defaultValue={item.item.category}>
-                <option value="JEWELRY">Jewelry</option>
-                <option value="COIN">Coin</option>
-                <option value="BAR">Bar</option>
-                <option value="SCRAP">Scrap</option>
-                <option value="OTHER">Other</option>
-              </select>
+
+          <div className="hero-stat-strip">
+            <div className="hero-stat">
+              <span className="hero-stat-label">{copy.common.worthNow}</span>
+              <strong>{currency(holding.worthNowQar, locale)}</strong>
             </div>
-            <div className="field">
-              <label htmlFor="purityKarat">{copy.karat}</label>
-              <select id="purityKarat" name="purityKarat" defaultValue={item.item.purityKarat}>
-                {[24, 23, 22, 21, 18, 14, 12, 10, 9, 8].map((value) => (
-                  <option key={value} value={value}>
-                    {value}K
-                  </option>
-                ))}
-              </select>
+            <div className="hero-stat">
+              <span className="hero-stat-label">{copy.common.gainLoss}</span>
+              <strong>
+                {preferences.showGainLossWhenBasisExists && holding.gainLossQar !== null
+                  ? formatSignedCurrency(holding.gainLossQar, locale)
+                  : copy.common.pending}
+              </strong>
             </div>
-          </div>
-          <div className="split">
-            <div className="field">
-              <label htmlFor="grossWeightG">{copy.grossWeight}</label>
-              <input id="grossWeightG" name="grossWeightG" type="number" step="0.0001" defaultValue={item.item.grossWeightG} required />
-            </div>
-            <div className="field">
-              <label htmlFor="stoneWeightG">{copy.stoneWeight}</label>
-              <input id="stoneWeightG" name="stoneWeightG" type="number" step="0.0001" defaultValue={item.item.stoneWeightG} />
+            <div className="hero-stat">
+              <span className="hero-stat-label">{copy.common.lastUpdated}</span>
+              <strong>{formatDate(summary.lastUpdated, locale)}</strong>
             </div>
           </div>
-          <div className="split">
-            <div className="field">
-              <label htmlFor="purchaseDate">{copy.purchaseDate}</label>
-              <input id="purchaseDate" name="purchaseDate" type="date" defaultValue={item.item.purchaseDate.slice(0, 10)} required />
-            </div>
-            <div className="field">
-              <label htmlFor="purchaseTotalPriceQar">{copy.purchaseTotal}</label>
-              <input
-                id="purchaseTotalPriceQar"
-                name="purchaseTotalPriceQar"
-                type="number"
-                step="0.01"
-                defaultValue={item.item.purchaseTotalPriceQar}
-                required
-              />
-            </div>
+
+          <div className="notice">
+            <strong>{copy.holding.weightAndKarat}</strong>
+            <span>
+              {holding.karat}K · {formatNumber(holding.grams, locale, 2)}g · {formatNumber(holding.fineGoldGrams, locale, 2)}g
+            </span>
           </div>
-          <div className="split">
-            <div className="field">
-              <label htmlFor="makingChargesQar">{copy.makingCharges}</label>
-              <input id="makingChargesQar" name="makingChargesQar" type="number" step="0.01" defaultValue={item.item.makingChargesQar} />
-            </div>
-            <div className="field">
-              <label htmlFor="vatQar">{copy.vat}</label>
-              <input id="vatQar" name="vatQar" type="number" step="0.01" defaultValue={item.item.vatQar} />
+        </article>
+
+        <aside className="content-card stack">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">{copy.holding.marketContext}</p>
+              <h2 className="panel-title">{copy.holding.marketContext}</h2>
             </div>
           </div>
-          <div className="field">
-            <label htmlFor="purchaseStoreName">{copy.store}</label>
-            <input id="purchaseStoreName" name="purchaseStoreName" defaultValue={item.item.purchaseStoreName ?? ""} />
+
+          <div className="metric-grid metric-grid--compact">
+            <div className="metric-card">
+              <span className="muted">{copy.common.live22k}</span>
+              <strong>{currency(derive22k(), locale)}</strong>
+            </div>
+            <div className="metric-card">
+              <span className="muted">{copy.common.live24k}</span>
+              <strong>{currency(marketRates.pricesByKarat["24K"] ?? 0, locale)}</strong>
+            </div>
+            <div className="metric-card">
+              <span className="muted">{copy.common.lastUpdated}</span>
+              <strong>{formatDate(marketRates.asOf, locale)}</strong>
+            </div>
           </div>
-          <div className="field">
-            <label htmlFor="purchaseLocation">{copy.location}</label>
-            <input id="purchaseLocation" name="purchaseLocation" defaultValue={item.item.purchaseLocation ?? ""} />
-          </div>
-          <div className="field">
-            <label htmlFor="purchaseNotes">{copy.notes}</label>
-            <textarea id="purchaseNotes" name="purchaseNotes" defaultValue={item.item.purchaseNotes ?? ""} />
-          </div>
-          <div className="button-row">
-            <button type="submit">{copy.saveChanges}</button>
-            <button type="button" className="button button--ghost" formAction={boundDelete}>
-              {copy.deleteItem}
-            </button>
-          </div>
-        </form>
+        </aside>
       </section>
 
+      <section className="dashboard-grid">
+        <article className="content-card stack">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">{copy.holding.chartTitle}</p>
+              <h2 className="panel-title">{copy.holding.chartTitle}</h2>
+            </div>
+            <RangeTabs
+              currentDays={rangeDays}
+              hrefForDays={(days) => `/${locale}/items/${itemId}?range=${days}${saved === "1" ? "&saved=1" : ""}`}
+            />
+          </div>
+          <ValueChart locale={locale} points={chartPoints} emptyLabel={copy.common.noData} />
+        </article>
+
+        <article className="content-card stack">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">{copy.holding.purchaseBasis}</p>
+              <h2 className="panel-title">{copy.holding.purchaseBasis}</h2>
+            </div>
+          </div>
+          <div className="list list--rows">
+            <div className="item-card item-card--row">
+              <div className="row-main">
+                <strong>{copy.addGold.purchaseDate}</strong>
+              </div>
+              <div className="row-end">
+                <span>{holding.purchaseDate ? formatDate(holding.purchaseDate, locale) : copy.common.pending}</span>
+              </div>
+            </div>
+            <div className="item-card item-card--row">
+              <div className="row-main">
+                <strong>{copy.common.invested}</strong>
+              </div>
+              <div className="row-end">
+                <span>{holding.purchaseTotalQar !== null ? currency(holding.purchaseTotalQar, locale) : copy.common.pending}</span>
+              </div>
+            </div>
+            <div className="item-card item-card--row">
+              <div className="row-main">
+                <strong>{copy.addGold.breakEven}</strong>
+              </div>
+              <div className="row-end">
+                <span>{holding.breakEvenPerGramQar !== null ? currency(holding.breakEvenPerGramQar, locale) : copy.common.pending}</span>
+              </div>
+            </div>
+            {holding.notes ? (
+              <div className="notice">
+                <strong>{copy.holding.notes}</strong>
+                <span>{holding.notes}</span>
+              </div>
+            ) : null}
+          </div>
+        </article>
+      </section>
+
+      <HoldingForm
+        locale={locale}
+        copy={copy}
+        submitLabel={copy.common.save}
+        action={boundUpdate}
+        vaultOptions={[{ id: holding.vaultId, name: holding.vaultName }]}
+        allowVaultChange={false}
+        live24kQar={marketRates.pricesByKarat["24K"] ?? 0}
+        currentFineGoldGrams={summary.fineGoldGrams - holding.fineGoldGrams}
+        values={{
+          vaultId: holding.vaultId,
+          itemName: holding.name,
+          grams: holding.grams,
+          karat: holding.karat,
+          purchaseBasisEnabled: holding.purchaseBasisKnown,
+          purchasePriceMode: notesMeta.purchasePriceMode,
+          purchasePriceValue:
+            holding.purchaseTotalQar !== null
+              ? notesMeta.purchasePriceMode === "per_gram"
+                ? Number((holding.purchaseTotalQar / Math.max(holding.grams, 1)).toFixed(2))
+                : holding.purchaseTotalQar
+              : "",
+          purchaseDate: holding.purchaseDate ? holding.purchaseDate.slice(0, 10) : "",
+          tags: holding.tags,
+          notes: holding.notes
+        }}
+      />
+
       <section className="content-card stack">
-        <p className="eyebrow">{copy.snapshot}</p>
-        <div className="metric-card metric-card--soft stack">
-          <span className="muted">{copy.purchaseTotal}</span>
-          <h2 className="metric-value">{currency(item.item.purchaseTotalPriceQar, locale)}</h2>
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">{copy.holding.deletePrompt}</p>
+            <h2 className="panel-title">{copy.holding.deletePrompt}</h2>
+          </div>
         </div>
-        <div className="notice">
-          {copy.purchaseContext}: {item.item.category} · {item.item.purityKarat}K
-        </div>
+        <p className="muted">{copy.holding.deleteWarning}</p>
+        <form action={boundDelete}>
+          <button type="submit" className="button button--ghost">
+            {copy.common.delete}
+          </button>
+        </form>
       </section>
     </div>
   );
+
+  function derive22k() {
+    const price24k = marketRates.pricesByKarat["24K"] ?? 0;
+    return marketRates.pricesByKarat["22K"] ?? Number((price24k * (22 / 24)).toFixed(2));
+  }
 }
