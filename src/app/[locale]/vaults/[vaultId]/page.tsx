@@ -2,9 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { apiFetch, readJson } from "../../../../lib/api";
-import { currency, formatDate } from "../../../../lib/format";
 import { requireUser } from "../../../../lib/auth";
-import { isLocale } from "../../../../lib/i18n";
+import { currency, formatDate } from "../../../../lib/format";
+import { isLocale, messages } from "../../../../lib/i18n";
 
 export default async function VaultDetailPage({
   params
@@ -17,6 +17,7 @@ export default async function VaultDetailPage({
   }
 
   await requireUser(locale);
+  const copy = messages[locale];
   const [vault, items, valuation] = await Promise.all([
     readJson<{ vault: { id: string; name: string } }>(await apiFetch(`/v1/vaults/${vaultId}`)),
     readJson<{ items: Array<{ id: string; itemName: string; purityKarat: number; netGoldWeightG: number; purchaseTotalPriceQar: number }> }>(
@@ -28,26 +29,47 @@ export default async function VaultDetailPage({
   ]);
 
   return (
-    <div className="stack">
-      <section className="content-card stack">
-        <p className="eyebrow">{vault.vault.name}</p>
-        <h1>{currency(valuation.totals.totalValueQar)}</h1>
+    <div className="stack stack--page">
+      <section className="section-banner">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">{vault.vault.name}</p>
+            <h1 className="section-title">{currency(valuation.totals.totalValueQar, locale)}</h1>
+          </div>
+          <span className="panel-chip">{items.items.length} items</span>
+        </div>
         <p className={valuation.totals.totalPlQar >= 0 ? "status-good" : "status-bad"}>
-          {currency(valuation.totals.totalPlQar)} · {formatDate(valuation.asOf)}
+          {currency(valuation.totals.totalPlQar, locale)} · {formatDate(valuation.asOf, locale)}
         </p>
-        <Link className="button" href={`/${locale}/items/new?vaultId=${vaultId}`}>
-          Add item
-        </Link>
+        <div className="button-row">
+          <Link className="button" href={`/${locale}/items/new?vaultId=${vaultId}`}>
+            {copy.addItem}
+          </Link>
+        </div>
       </section>
 
-      <section className="list">
-        {items.items.map((item) => (
-          <Link key={item.id} href={`/${locale}/items/${item.id}`} className="item-card">
-            <strong>{item.itemName}</strong>
-            <span className="muted">{item.purityKarat}K · {item.netGoldWeightG}g</span>
-            <span>{currency(item.purchaseTotalPriceQar)}</span>
-          </Link>
-        ))}
+      <section className="content-card stack">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">{copy.trackedPieces}</p>
+            <h2 className="panel-title">{copy.trackedPieces}</h2>
+          </div>
+        </div>
+        <div className="list list--rows">
+          {items.items.map((item) => (
+            <Link key={item.id} href={`/${locale}/items/${item.id}`} className="item-card item-card--row">
+              <div className="row-main">
+                <strong>{item.itemName}</strong>
+                <span className="muted">
+                  {item.purityKarat}K · {item.netGoldWeightG}g
+                </span>
+              </div>
+              <div className="row-end">
+                <span>{currency(item.purchaseTotalPriceQar, locale)}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
       </section>
     </div>
   );
