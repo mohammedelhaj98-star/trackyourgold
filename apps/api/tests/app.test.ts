@@ -25,14 +25,17 @@ const mockDb = {
     findFirst: vi.fn()
   },
   setting: {
-    findUnique: vi.fn()
+    findUnique: vi.fn(),
+    findMany: vi.fn(),
+    upsert: vi.fn()
   },
   sourceHealth: {
     findMany: vi.fn()
   },
   market: {
     findMany: vi.fn()
-  }
+  },
+  $transaction: vi.fn(async (operations: Array<Promise<unknown>>) => Promise.all(operations))
 };
 
 vi.mock("@trackyourgold/db", () => ({
@@ -41,7 +44,7 @@ vi.mock("@trackyourgold/db", () => ({
 
 describe("api", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     process.env.APP_ENV = "test";
     process.env.DATABASE_URL = "test";
     process.env.JWT_ACCESS_SECRET = "0123456789abcdef";
@@ -127,5 +130,85 @@ describe("api", () => {
     const rates = await getLatestRates(mockDb as never, "market");
     expect(rates.pricesByKarat["22K"]).toBe(253);
     expect(rates.source.code).toBe("market_metalsapi");
+  });
+
+  it("logs in an admin by username", async () => {
+    const { hashPassword } = await import("../src/lib/auth.js");
+    const passwordHash = await hashPassword("Admin1");
+    mockDb.user.findUnique.mockResolvedValue({
+      id: "admin-1",
+      username: "Admin1",
+      email: "admin1@trackyourgold.internal",
+      passwordHash,
+      language: "en",
+      role: "ADMIN"
+    });
+    mockDb.refreshToken.create.mockResolvedValue({
+      id: "refresh-1"
+    });
+
+    const { buildApp } = await import("../src/app.js");
+    const app = buildApp();
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/admin/auth/login",
+      payload: {
+        username: "Admin1",
+        password: "Admin1"
+      }
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().user.username).toBe("Admin1");
+    await app.close();
+  });
+
+  it("forbids non-admin access to admin config", async () => {
+    const { buildApp } = await import("../src/app.js");
+    const { getConfig } = await import("../src/config.js");
+    const { signAccessToken } = await import("../src/lib/auth.js");
+    const app = buildApp();
+    const token = signAccessToken(getConfig(), {
+      sub: "user-1",
+      email: "user@example.com",
+      language: "en",
+      role: "USER"
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/admin/ui-config",
+      cookies: {
+        tyg_access_token: token
+      }
+    });
+
+    expect(response.statusCode).toBe(403);
+    await app.close();
+  });
+
+  it("returns stored public ui config", async () => {
+    const { buildApp } = await import("../src/app.js");
+    mockDb.setting.findMany.mockResolvedValue([
+      {
+        key: "ui.theme",
+        value: {
+          accentColor: "#efc97d",
+          softAccentColor: "#c19b52",
+          heroGradientStart: "#efc97d",
+          heroGradientEnd: "#7f96ff"
+        }
+      }
+    ]);
+
+    const app = buildApp();
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/public/ui-config"
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().config.theme.accentColor).toBe("#efc97d");
+    await app.close();
   });
 });

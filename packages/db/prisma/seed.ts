@@ -4,6 +4,9 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
+  const bootstrapAdminUsername = process.env.BOOTSTRAP_ADMIN_USERNAME ?? "Admin1";
+  const bootstrapAdminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD ?? "Admin1";
+  const bootstrapAdminEmail = process.env.BOOTSTRAP_ADMIN_EMAIL ?? "admin1@trackyourgold.internal";
   const adminEmail = process.env.SEED_ADMIN_EMAIL;
   const adminPassword = process.env.SEED_ADMIN_PASSWORD;
   const marketBaseUrl = process.env.MARKET_API_BASE_URL ?? "__MARKET_API_BASE_URL__";
@@ -77,6 +80,25 @@ async function main() {
         subtitleEn: "A clean vault for your jewelry, coins, and bars. Live QAR estimates from market rates and local retail boards.",
         subtitleAr: "خزنة بسيطة لمجوهراتك وسبائكك وعملاتك. تقديرات بالريال القطري من أسعار السوق ولوحات المتاجر."
       }
+    }
+  });
+
+  const bootstrapPasswordHash = await bcrypt.hash(bootstrapAdminPassword, 10);
+
+  await prisma.user.upsert({
+    where: { email: bootstrapAdminEmail },
+    update: {
+      username: bootstrapAdminUsername,
+      passwordHash: bootstrapPasswordHash,
+      role: "ADMIN",
+      language: "en"
+    },
+    create: {
+      email: bootstrapAdminEmail,
+      username: bootstrapAdminUsername,
+      passwordHash: bootstrapPasswordHash,
+      role: "ADMIN",
+      language: "en"
     }
   });
 

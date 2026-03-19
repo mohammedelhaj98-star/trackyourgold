@@ -96,3 +96,12 @@ export function requireAccessToken(request: FastifyRequest, config: ApiConfig) {
 
   return verifyAccessToken(config, accessToken);
 }
+
+export function requireAdminAccessToken(request: FastifyRequest, config: ApiConfig) {
+  const session = requireAccessToken(request, config);
+  if (session.role !== "ADMIN") {
+    throw new ApiError(403, "forbidden", "Admin access required.");
+  }
+
+  return session;
+}

@@ -2,15 +2,47 @@ import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import Fastify from "fastify";
 
-import { createVaultSchema, createVaultItemSchema, latestRatesQuerySchema, loginSchema, signUpSchema, updateVaultItemSchema, valuationHistoryQuerySchema, valuationQuerySchema } from "@trackyourgold/shared";
+import {
+  adminLoginSchema,
+  createVaultItemSchema,
+  createVaultSchema,
+  latestRatesQuerySchema,
+  loginSchema,
+  signUpSchema,
+  updateVaultItemSchema,
+  valuationHistoryQuerySchema,
+  valuationQuerySchema
+} from "@trackyourgold/shared";
 import { getPrismaClient } from "@trackyourgold/db";
 
 import { getConfig } from "./config.js";
-import { clearSessionCookies, readTokens, requireAccessToken, setSessionCookies, verifyRefreshToken } from "./lib/auth.js";
+import {
+  clearSessionCookies,
+  hashToken,
+  readTokens,
+  requireAccessToken,
+  requireAdminAccessToken,
+  setSessionCookies,
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken
+} from "./lib/auth.js";
 import { toErrorPayload } from "./lib/errors.js";
 import { loginUser, signUpUser } from "./modules/auth.js";
-import { getMarkets, getPublicHome, getQuoteHistory, getLatestRates, getSourceStatus } from "./modules/public.js";
-import { createVault, createVaultItem, deleteVaultItem, getOwnedItem, getOwnedVault, getUserVaults, getVaultValuation, getVaultValuationHistory, listVaultItems, updateVaultItem } from "./modules/vaults.js";
+import { getAdminMe, getStoredUiConfig, loginAdminUser, saveUiConfig } from "./modules/admin.js";
+import { getLatestRates, getMarkets, getPublicHome, getQuoteHistory, getSourceStatus } from "./modules/public.js";
+import {
+  createVault,
+  createVaultItem,
+  deleteVaultItem,
+  getOwnedItem,
+  getOwnedVault,
+  getUserVaults,
+  getVaultValuation,
+  getVaultValuationHistory,
+  listVaultItems,
+  updateVaultItem
+} from "./modules/vaults.js";
 
 function buildOrigin(host: string) {
   const scheme = host.includes("localhost") ? "http:" : "https:";
@@ -21,6 +53,17 @@ export function buildApp() {
   const config = getConfig();
   const db = getPrismaClient();
   const app = Fastify({ logger: true });
+
+  const revokeRefreshToken = async (refreshToken?: string) => {
+    if (!refreshToken) {
+      return;
+    }
+
+    await db.refreshToken.updateMany({
+      where: { tokenHash: hashToken(refreshToken) },
+      data: { revokedAt: new Date() }
+    });
+  };
 
   app.register(cookie);
   app.register(cors, {
@@ -40,6 +83,7 @@ export function buildApp() {
 
   app.get("/v1/public/home", async () => getPublicHome(db));
   app.get("/v1/public/markets", async () => ({ markets: await getMarkets(db) }));
+  app.get("/v1/public/ui-config", async () => ({ config: await getStoredUiConfig(db) }));
   app.get("/v1/public/quotes/latest", async (request, reply) => {
     const query = latestRatesQuerySchema.parse(request.query);
     reply.header("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
@@ -90,12 +134,7 @@ export function buildApp() {
 
   app.post("/v1/auth/logout", async (request, reply) => {
     const { refreshToken } = readTokens(request);
-    if (refreshToken) {
-      await db.refreshToken.updateMany({
-        where: { tokenHash: (await import("./lib/auth.js")).hashToken(refreshToken) },
-        data: { revokedAt: new Date() }
-      });
-    }
+    await revokeRefreshToken(refreshToken);
 
     clearSessionCookies(reply, config);
     return { ok: true };
@@ -112,7 +151,7 @@ export function buildApp() {
     const tokenRecord = await db.refreshToken.findFirst({
       where: {
         userId: payload.sub,
-        tokenHash: (await import("./lib/auth.js")).hashToken(refreshToken),
+        tokenHash: hashToken(refreshToken),
         revokedAt: null
       },
       include: { user: true }
@@ -124,18 +163,18 @@ export function buildApp() {
       return { error: { code: "refresh_expired", message: "Refresh token expired." } };
     }
 
-    const accessToken = (await import("./lib/auth.js")).signAccessToken(config, {
+    const accessToken = signAccessToken(config, {
       sub: tokenRecord.user.id,
       email: tokenRecord.user.email,
       language: tokenRecord.user.language,
       role: tokenRecord.user.role
     });
-    const newRefreshToken = (await import("./lib/auth.js")).signRefreshToken(config, tokenRecord.user.id);
+    const newRefreshToken = signRefreshToken(config, tokenRecord.user.id);
 
     await db.refreshToken.update({
       where: { id: tokenRecord.id },
       data: {
-        tokenHash: (await import("./lib/auth.js")).hashToken(newRefreshToken),
+        tokenHash: hashToken(newRefreshToken),
         lastUsedAt: new Date(),
         expiresAt: new Date(Date.now() + config.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000)
       }
@@ -153,6 +192,59 @@ export function buildApp() {
         refreshToken: newRefreshToken
       }
     };
+  });
+
+  app.post("/v1/admin/auth/login", async (request, reply) => {
+    const input = adminLoginSchema.parse(request.body);
+    const result = await loginAdminUser(db, config, input);
+    setSessionCookies(reply, config, result.accessToken, result.refreshToken);
+
+    return {
+      user: {
+        id: result.user.id,
+        username: result.user.username,
+        email: result.user.email,
+        language: result.user.language,
+        role: result.user.role
+      },
+      session: {
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken
+      }
+    };
+  });
+
+  app.post("/v1/admin/auth/logout", async (request, reply) => {
+    requireAdminAccessToken(request, config);
+    const { refreshToken } = readTokens(request);
+    await revokeRefreshToken(refreshToken);
+    clearSessionCookies(reply, config);
+    return { ok: true };
+  });
+
+  app.get("/v1/admin/me", async (request) => {
+    const session = requireAdminAccessToken(request, config);
+    const user = await getAdminMe(db, session.sub);
+
+    return {
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        language: user.language,
+        role: user.role
+      }
+    };
+  });
+
+  app.get("/v1/admin/ui-config", async (request) => {
+    requireAdminAccessToken(request, config);
+    return { config: await getStoredUiConfig(db) };
+  });
+
+  app.put("/v1/admin/ui-config", async (request) => {
+    requireAdminAccessToken(request, config);
+    return { config: await saveUiConfig(db, request.body) };
   });
 
   app.get("/v1/me", async (request) => {
