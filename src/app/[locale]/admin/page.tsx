@@ -17,12 +17,16 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
   const boundLogout = adminLogoutAction.bind(null, locale);
 
   return (
-    <div className="stack stack--page">
+    <div className="admin-workspace stack stack--page">
       <section className="content-card admin-header">
         <div className="section-heading">
           <div>
             <p className="eyebrow">Admin Workspace</p>
             <h1 className="section-title">TrackYourGold UI Controls</h1>
+            <p className="muted">
+              Edit live copy, layout order, ad placements, and theme tokens for the shipped customer-facing
+              experience. Changes publish immediately after save.
+            </p>
           </div>
           <form action={boundLogout}>
             <button type="submit" className="button button--ghost">
