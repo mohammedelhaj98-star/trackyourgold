@@ -4,8 +4,9 @@ import { savePreferencesAction } from "../../../lib/actions";
 import { apiFetch, readJson } from "../../../lib/api";
 import { requireUser } from "../../../lib/auth";
 import { formatDate } from "../../../lib/format";
-import { isLocale, messages } from "../../../lib/i18n";
+import { isLocale } from "../../../lib/i18n";
 import { getUiPreferences } from "../../../lib/preferences";
+import { getRuntimeUi } from "../../../lib/ui-config";
 
 export default async function SettingsPage({
   params,
@@ -20,7 +21,8 @@ export default async function SettingsPage({
   }
 
   await requireUser(locale);
-  const copy = messages[locale];
+  const ui = await getRuntimeUi(locale);
+  const copy = ui.copy;
   const [preferences, sources, query] = await Promise.all([
     getUiPreferences(),
     readJson<{
@@ -140,6 +142,7 @@ export default async function SettingsPage({
             </div>
           </div>
           <p className="muted">{copy.settings.adsCopy}</p>
+          {ui.ads.settings.enabled ? <div className="notice"><strong>{ui.ads.settings.title}</strong><span>{ui.ads.settings.copy}</span></div> : null}
         </section>
       </aside>
     </div>

@@ -6,7 +6,7 @@ import { ValueChart } from "../../../../components/value-chart";
 import { deleteItemAction, updateItemAction } from "../../../../lib/actions";
 import { requireUser } from "../../../../lib/auth";
 import { currency, formatDate, formatNumber, formatSignedCurrency } from "../../../../lib/format";
-import { isLocale, messages } from "../../../../lib/i18n";
+import { isLocale } from "../../../../lib/i18n";
 import {
   buildHoldingHistory,
   coerceRangeDays,
@@ -15,6 +15,7 @@ import {
   parseHoldingNotes
 } from "../../../../lib/portfolio";
 import { getUiPreferences } from "../../../../lib/preferences";
+import { getRuntimeUi } from "../../../../lib/ui-config";
 
 export default async function ItemDetailPage({
   params,
@@ -29,7 +30,7 @@ export default async function ItemDetailPage({
   }
 
   await requireUser(locale);
-  const copy = messages[locale];
+  const copy = (await getRuntimeUi(locale)).copy;
   const preferences = await getUiPreferences();
   const { range, saved } = await searchParams;
   const rangeDays = coerceRangeDays(range);

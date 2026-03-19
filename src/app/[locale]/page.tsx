@@ -7,7 +7,7 @@ import { RangeTabs } from "../../components/range-tabs";
 import { ValueChart } from "../../components/value-chart";
 import { getCurrentUser } from "../../lib/auth";
 import { currency, formatDate, formatNumber, formatSignedCurrency, formatSignedPercent } from "../../lib/format";
-import { getAchievementLabel, getTierLabel, isLocale, messages } from "../../lib/i18n";
+import { getAchievementLabel, getTierLabel, isLocale } from "../../lib/i18n";
 import {
   aggregatePortfolioHistory,
   coerceRangeDays,
@@ -20,6 +20,7 @@ import {
   type ChartPoint
 } from "../../lib/portfolio";
 import { getUiPreferences } from "../../lib/preferences";
+import { getRuntimeUi } from "../../lib/ui-config";
 
 export default async function HomePage({
   params,
@@ -33,10 +34,15 @@ export default async function HomePage({
     notFound();
   }
 
-  const copy = messages[locale];
   const { range, added } = await searchParams;
   const rangeDays = coerceRangeDays(range);
-  const [me, preferences, publicHome] = await Promise.all([getCurrentUser(), getUiPreferences(), fetchPublicHome()]);
+  const [me, preferences, publicHome, ui] = await Promise.all([
+    getCurrentUser(),
+    getUiPreferences(),
+    fetchPublicHome(),
+    getRuntimeUi(locale)
+  ]);
+  const copy = ui.copy;
 
   if (!me) {
     const history = await fetchQuoteHistory(30, "market");
@@ -113,11 +119,7 @@ export default async function HomePage({
             <h2>{currency(publicHome.latestPrice22k, locale)}</h2>
             <p className="muted">{copy.hero.signalFresh}</p>
           </article>
-          <AdSlot
-            label={copy.common.ad}
-            title="Quiet sponsor placement"
-            copy="Reserved for a clearly labeled partner card that never imitates navigation."
-          />
+          {ui.ads.home.enabled ? <AdSlot label={ui.ads.label} title={ui.ads.home.title} copy={ui.ads.home.copy} /> : null}
         </section>
       </div>
     );
@@ -253,151 +255,161 @@ export default async function HomePage({
         </div>
       ) : null}
 
-      <section className="dashboard-grid">
-        <article className="content-card stack">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">{holdings.length ? copy.home.chartPortfolio : copy.home.chartMarket}</p>
-              <h2 className="panel-title">{holdings.length ? copy.home.chartPortfolio : copy.home.chartMarket}</h2>
-            </div>
-            <RangeTabs
-              currentDays={rangeDays}
-              hrefForDays={(days) => `/${locale}?range=${days}${added === "1" ? "&added=1" : ""}`}
-            />
-          </div>
-          <ValueChart locale={locale} points={chartPoints} emptyLabel={copy.common.noData} />
-          {!holdings.length ? (
-            <div className="notice">
-              <strong>{copy.home.emptyTitle}</strong>
-              <span>{copy.home.emptyCopy}</span>
-              <div className="button-row">
-                <Link className="button" href={`/${locale}/items/new?vaultId=${primaryVaultId}`}>
-                  {copy.nav.addGold}
-                </Link>
-                <a className="button button--ghost" href="#market-strip">
-                  {copy.home.viewLiveMarket}
-                </a>
-              </div>
-            </div>
-          ) : null}
-        </article>
-
-        <article className="content-card stack" id="market-strip">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">{copy.home.marketStripTitle}</p>
-              <h2 className="panel-title">{copy.home.marketStripTitle}</h2>
-            </div>
-            <span className={`status-pill ${publicHome.marketStale ? "status-pill--soft" : "status-pill--live"}`}>
-              {publicHome.marketStale ? copy.common.staleData : copy.common.freshData}
-            </span>
-          </div>
-
-          <div className="metric-grid metric-grid--compact">
-            <div className="metric-card">
-              <span className="muted">{copy.common.live22k}</span>
-              <strong>{currency(publicHome.latestPrice22k, locale)}</strong>
-            </div>
-            <div className="metric-card">
-              <span className="muted">{copy.common.live24k}</span>
-              <strong>{currency(publicHome.latestPrice24k, locale)}</strong>
-            </div>
-            {preferences.showRetailComparison ? (
-              <div className="metric-card">
-                <span className="muted">{copy.common.retail22k}</span>
-                <strong>{publicHome.retail ? currency(publicHome.retail.latestPrice22k, locale) : copy.common.pending}</strong>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="list list--rows">
-            <div className="item-card item-card--row">
-              <div className="row-main">
-                <strong>{copy.common.lastUpdated}</strong>
-              </div>
-              <div className="row-end">
-                <span>{formatDate(publicHome.marketAsOf, locale)}</span>
-              </div>
-            </div>
-            {publicHome.retail ? (
-              <div className="item-card item-card--row">
-                <div className="row-main">
-                  <strong>{copy.common.retail22k}</strong>
-                </div>
-                <div className="row-end">
-                  <span>{formatDate(publicHome.retail.asOf, locale)}</span>
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          <AdSlot
-            label={copy.common.ad}
-            title="Low-profile sponsor slot"
-            copy="A quiet placement for a partner card, clearly marked and never blended into navigation."
-          />
-        </article>
-      </section>
-
-      <section className="dashboard-grid">
-        <article className="content-card stack">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">{copy.home.recentHoldings}</p>
-              <h2 className="panel-title">{copy.home.recentHoldings}</h2>
-            </div>
-            <Link className="link-pill" href={`/${locale}/vaults`}>
-              {copy.home.viewPortfolio}
-            </Link>
-          </div>
-
-          <div className="list list--rows">
-            {recentHoldings.length ? (
-              recentHoldings.slice(0, 4).map((holding) => (
-                <Link key={holding.id} href={`/${locale}/items/${holding.id}`} className="item-card item-card--row">
-                  <div className="row-main">
-                    <strong>{holding.name}</strong>
-                    <span className="muted">
-                      {holding.karat}K · {formatNumber(holding.grams, locale, 2)}g · {holding.vaultName}
-                    </span>
+      <section className="dashboard-grid dashboard-grid--cards">
+        {ui.homeSections.map((section) => {
+          if (section === "chart") {
+            return (
+              <article key={section} className="content-card stack">
+                <div className="section-heading">
+                  <div>
+                    <p className="eyebrow">{holdings.length ? copy.home.chartPortfolio : copy.home.chartMarket}</p>
+                    <h2 className="panel-title">{holdings.length ? copy.home.chartPortfolio : copy.home.chartMarket}</h2>
                   </div>
-                  <div className="row-end">
-                    <span>{currency(holding.worthNowQar, locale)}</span>
-                    {preferences.showGainLossWhenBasisExists && holding.gainLossQar !== null ? (
-                      <span className={holding.gainLossQar >= 0 ? "status-good" : "status-bad"}>
-                        {formatSignedCurrency(holding.gainLossQar, locale)}
-                      </span>
-                    ) : null}
+                  <RangeTabs
+                    currentDays={rangeDays}
+                    hrefForDays={(days) => `/${locale}?range=${days}${added === "1" ? "&added=1" : ""}`}
+                  />
+                </div>
+                <ValueChart locale={locale} points={chartPoints} emptyLabel={copy.common.noData} />
+                {!holdings.length ? (
+                  <div className="notice">
+                    <strong>{copy.home.emptyTitle}</strong>
+                    <span>{copy.home.emptyCopy}</span>
+                    <div className="button-row">
+                      <Link className="button" href={`/${locale}/items/new?vaultId=${primaryVaultId}`}>
+                        {copy.nav.addGold}
+                      </Link>
+                      <a className="button button--ghost" href="#market-strip">
+                        {copy.home.viewLiveMarket}
+                      </a>
+                    </div>
                   </div>
-                </Link>
-              ))
-            ) : (
-              <div className="notice">
-                <strong>{copy.home.emptyTitle}</strong>
-                <span>{copy.home.noRecentHoldings}</span>
-              </div>
-            )}
-          </div>
-        </article>
+                ) : null}
+              </article>
+            );
+          }
 
-        <article className="content-card stack">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">{copy.progress.achievements}</p>
-              <h2 className="panel-title">{copy.progress.achievements}</h2>
-            </div>
-          </div>
-          <div className="achievement-grid">
-            {achievements.map((achievement) => (
-              <div
-                key={achievement.key}
-                className={`achievement-card ${achievement.unlocked ? "achievement-card--unlocked" : ""}`}
-              >
-                <strong>{getAchievementLabel(copy, achievement.key)}</strong>
+          if (section === "market") {
+            return (
+              <article key={section} className="content-card stack" id="market-strip">
+                <div className="section-heading">
+                  <div>
+                    <p className="eyebrow">{copy.home.marketStripTitle}</p>
+                    <h2 className="panel-title">{copy.home.marketStripTitle}</h2>
+                  </div>
+                  <span className={`status-pill ${publicHome.marketStale ? "status-pill--soft" : "status-pill--live"}`}>
+                    {publicHome.marketStale ? copy.common.staleData : copy.common.freshData}
+                  </span>
+                </div>
+
+                <div className="metric-grid metric-grid--compact">
+                  <div className="metric-card">
+                    <span className="muted">{copy.common.live22k}</span>
+                    <strong>{currency(publicHome.latestPrice22k, locale)}</strong>
+                  </div>
+                  <div className="metric-card">
+                    <span className="muted">{copy.common.live24k}</span>
+                    <strong>{currency(publicHome.latestPrice24k, locale)}</strong>
+                  </div>
+                  {preferences.showRetailComparison ? (
+                    <div className="metric-card">
+                      <span className="muted">{copy.common.retail22k}</span>
+                      <strong>{publicHome.retail ? currency(publicHome.retail.latestPrice22k, locale) : copy.common.pending}</strong>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="list list--rows">
+                  <div className="item-card item-card--row">
+                    <div className="row-main">
+                      <strong>{copy.common.lastUpdated}</strong>
+                    </div>
+                    <div className="row-end">
+                      <span>{formatDate(publicHome.marketAsOf, locale)}</span>
+                    </div>
+                  </div>
+                  {publicHome.retail ? (
+                    <div className="item-card item-card--row">
+                      <div className="row-main">
+                        <strong>{copy.common.retail22k}</strong>
+                      </div>
+                      <div className="row-end">
+                        <span>{formatDate(publicHome.retail.asOf, locale)}</span>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                {ui.ads.home.enabled ? <AdSlot label={ui.ads.label} title={ui.ads.home.title} copy={ui.ads.home.copy} /> : null}
+              </article>
+            );
+          }
+
+          if (section === "recentHoldings") {
+            return (
+              <article key={section} className="content-card stack">
+                <div className="section-heading">
+                  <div>
+                    <p className="eyebrow">{copy.home.recentHoldings}</p>
+                    <h2 className="panel-title">{copy.home.recentHoldings}</h2>
+                  </div>
+                  <Link className="link-pill" href={`/${locale}/vaults`}>
+                    {copy.home.viewPortfolio}
+                  </Link>
+                </div>
+
+                <div className="list list--rows">
+                  {recentHoldings.length ? (
+                    recentHoldings.slice(0, 4).map((holding) => (
+                      <Link key={holding.id} href={`/${locale}/items/${holding.id}`} className="item-card item-card--row">
+                        <div className="row-main">
+                          <strong>{holding.name}</strong>
+                          <span className="muted">
+                            {holding.karat}K · {formatNumber(holding.grams, locale, 2)}g · {holding.vaultName}
+                          </span>
+                        </div>
+                        <div className="row-end">
+                          <span>{currency(holding.worthNowQar, locale)}</span>
+                          {preferences.showGainLossWhenBasisExists && holding.gainLossQar !== null ? (
+                            <span className={holding.gainLossQar >= 0 ? "status-good" : "status-bad"}>
+                              {formatSignedCurrency(holding.gainLossQar, locale)}
+                            </span>
+                          ) : null}
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="notice">
+                      <strong>{copy.home.emptyTitle}</strong>
+                      <span>{copy.home.noRecentHoldings}</span>
+                    </div>
+                  )}
+                </div>
+              </article>
+            );
+          }
+
+          return (
+            <article key={section} className="content-card stack">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">{copy.progress.achievements}</p>
+                  <h2 className="panel-title">{copy.progress.achievements}</h2>
+                </div>
               </div>
-            ))}
-          </div>
-        </article>
+              <div className="achievement-grid">
+                {achievements.map((achievement) => (
+                  <div
+                    key={achievement.key}
+                    className={`achievement-card ${achievement.unlocked ? "achievement-card--unlocked" : ""}`}
+                  >
+                    <strong>{getAchievementLabel(copy, achievement.key)}</strong>
+                  </div>
+                ))}
+              </div>
+            </article>
+          );
+        })}
       </section>
     </div>
   );

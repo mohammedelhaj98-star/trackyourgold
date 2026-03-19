@@ -6,7 +6,7 @@ import { ValueChart } from "../../../../components/value-chart";
 import { apiFetch, readJson } from "../../../../lib/api";
 import { requireUser } from "../../../../lib/auth";
 import { currency, formatDate, formatNumber, formatSignedCurrency } from "../../../../lib/format";
-import { isLocale, messages } from "../../../../lib/i18n";
+import { isLocale } from "../../../../lib/i18n";
 import {
   aggregatePortfolioHistory,
   coerceRangeDays,
@@ -18,6 +18,7 @@ import {
   type ApiVault
 } from "../../../../lib/portfolio";
 import { getUiPreferences } from "../../../../lib/preferences";
+import { getRuntimeUi } from "../../../../lib/ui-config";
 
 export default async function VaultDetailPage({
   params,
@@ -32,8 +33,8 @@ export default async function VaultDetailPage({
   }
 
   await requireUser(locale);
-  const copy = messages[locale];
-  const preferences = await getUiPreferences();
+  const [preferences, ui] = await Promise.all([getUiPreferences(), getRuntimeUi(locale)]);
+  const copy = ui.copy;
   const rangeDays = coerceRangeDays((await searchParams).range);
 
   const [vaultPayload, items, marketRates, history] = await Promise.all([

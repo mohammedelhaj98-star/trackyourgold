@@ -5,9 +5,10 @@ import { AdSlot } from "../../../components/ad-slot";
 import { createVaultAction } from "../../../lib/actions";
 import { requireUser } from "../../../lib/auth";
 import { currency, formatNumber, formatSignedCurrency } from "../../../lib/format";
-import { isLocale, messages } from "../../../lib/i18n";
+import { isLocale } from "../../../lib/i18n";
 import { filterAndSortHoldings, loadPortfolioState } from "../../../lib/portfolio";
 import { getUiPreferences } from "../../../lib/preferences";
+import { getRuntimeUi } from "../../../lib/ui-config";
 
 export default async function PortfolioPage({
   params,
@@ -22,8 +23,8 @@ export default async function PortfolioPage({
   }
 
   await requireUser(locale);
-  const copy = messages[locale];
-  const preferences = await getUiPreferences();
+  const [preferences, ui] = await Promise.all([getUiPreferences(), getRuntimeUi(locale)]);
+  const copy = ui.copy;
   const [{ holdings, summary, vaults }, query] = await Promise.all([loadPortfolioState(), searchParams]);
 
   const allTags = [...new Set(holdings.flatMap((holding) => holding.tags))].sort((left, right) => left.localeCompare(right));
@@ -144,13 +145,13 @@ export default async function PortfolioPage({
                 </Link>
               ];
 
-              if ((index + 1) % 9 === 0 && index !== filtered.length - 1) {
+              if (ui.ads.portfolio.enabled && (index + 1) % 9 === 0 && index !== filtered.length - 1) {
                 items.push(
                   <AdSlot
                     key={`ad-${holding.id}`}
-                    label={copy.common.ad}
-                    title="Subtle sponsor card"
-                    copy="Reserved for a clearly marked ad that never imitates actions or navigation."
+                    label={ui.ads.label}
+                    title={ui.ads.portfolio.title}
+                    copy={ui.ads.portfolio.copy}
                   />
                 );
               }

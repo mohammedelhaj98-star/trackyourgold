@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { HoldingForm } from "../../../../components/holding-form";
 import { createItemAction } from "../../../../lib/actions";
 import { requireUser } from "../../../../lib/auth";
-import { isLocale, messages } from "../../../../lib/i18n";
+import { isLocale } from "../../../../lib/i18n";
 import { loadPortfolioState } from "../../../../lib/portfolio";
+import { getRuntimeUi } from "../../../../lib/ui-config";
 
 export default async function NewItemPage({
   params,
@@ -19,7 +20,7 @@ export default async function NewItemPage({
   }
 
   const me = await requireUser(locale);
-  const copy = messages[locale];
+  const copy = (await getRuntimeUi(locale)).copy;
   const { vaultId } = await searchParams;
   const { vaults, marketRates, summary } = await loadPortfolioState();
   const selectedVaultId = vaultId ?? me.defaultVaultId ?? vaults[0]?.id ?? "";

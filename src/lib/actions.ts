@@ -107,6 +107,25 @@ export async function loginAction(formData: FormData) {
   redirect(`/${locale}`);
 }
 
+export async function adminLoginAction(formData: FormData) {
+  const locale = toText(formData, "locale", "en");
+  const response = await apiFetch("/v1/admin/auth/login", {
+    method: "POST",
+    body: JSON.stringify({
+      username: toText(formData, "username"),
+      password: toText(formData, "password")
+    })
+  });
+
+  const payload = await readJson<{
+    user: { id: string; username: string | null; email: string; language: string; role: string };
+    session: { accessToken: string; refreshToken: string };
+  }>(response);
+
+  await setSession(payload.session);
+  redirect(`/${locale}/admin`);
+}
+
 export async function logoutAction(locale: string) {
   try {
     await apiFetch("/v1/auth/logout", {
@@ -117,6 +136,18 @@ export async function logoutAction(locale: string) {
   }
 
   redirect(`/${locale}`);
+}
+
+export async function adminLogoutAction(locale: string) {
+  try {
+    await apiFetch("/v1/admin/auth/logout", {
+      method: "POST"
+    });
+  } finally {
+    await clearSession();
+  }
+
+  redirect(`/${locale}/admin/login`);
 }
 
 export async function createVaultAction(formData: FormData) {

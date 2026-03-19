@@ -2,8 +2,9 @@ import { notFound } from "next/navigation";
 
 import { requireUser } from "../../../lib/auth";
 import { formatNumber } from "../../../lib/format";
-import { getAchievementLabel, getTierLabel, isLocale, messages } from "../../../lib/i18n";
+import { getAchievementLabel, getTierLabel, isLocale } from "../../../lib/i18n";
 import { computeAchievements, computeTierProgress, loadPortfolioState } from "../../../lib/portfolio";
+import { getRuntimeUi } from "../../../lib/ui-config";
 
 export default async function ProgressPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -12,7 +13,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ local
   }
 
   await requireUser(locale);
-  const copy = messages[locale];
+  const copy = (await getRuntimeUi(locale)).copy;
   const { holdings, summary } = await loadPortfolioState();
   const progress = computeTierProgress(summary.fineGoldGrams);
   const achievements = computeAchievements(holdings);

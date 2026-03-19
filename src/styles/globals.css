@@ -12,6 +12,10 @@
   --gold: #efc97d;
   --gold-deep: #a97518;
   --blue: #7f96ff;
+  --accent-soft-color: rgba(239, 201, 125, 0.14);
+  --accent-soft-color-strong: rgba(127, 150, 255, 0.12);
+  --hero-gradient-start: rgba(239, 201, 125, 0.1);
+  --hero-gradient-end: rgba(127, 150, 255, 0.12);
   --line: rgba(255, 255, 255, 0.08);
   --line-strong: rgba(255, 255, 255, 0.15);
   --success: #71d7a1;
@@ -35,8 +39,8 @@ body {
   margin: 0;
   padding: 0;
   background:
-    radial-gradient(circle at top left, rgba(239, 201, 125, 0.14), transparent 26%),
-    radial-gradient(circle at top right, rgba(127, 150, 255, 0.12), transparent 24%),
+    radial-gradient(circle at top left, var(--accent-soft-color), transparent 26%),
+    radial-gradient(circle at top right, var(--accent-soft-color-strong), transparent 24%),
     linear-gradient(180deg, rgba(10, 12, 18, 0.96), rgba(7, 8, 12, 1)),
     var(--bg);
   color: var(--text);
@@ -203,7 +207,8 @@ textarea {
 .hero-stage,
 .split,
 .holding-form__layout,
-.auth-shell {
+.auth-shell,
+.admin-shell {
   display: grid;
   gap: 22px;
 }
@@ -216,7 +221,8 @@ textarea {
 .dashboard-grid,
 .holding-form__layout,
 .split,
-.auth-shell {
+.auth-shell,
+.admin-shell {
   grid-template-columns: minmax(0, 1.12fr) minmax(320px, 0.88fr);
 }
 
@@ -232,7 +238,7 @@ textarea {
 
 .hero-surface--primary {
   background:
-    linear-gradient(145deg, rgba(239, 201, 125, 0.1), transparent 45%),
+    linear-gradient(145deg, var(--hero-gradient-start), transparent 45%),
     linear-gradient(180deg, rgba(20, 23, 32, 0.96), rgba(11, 13, 18, 0.96));
 }
 
@@ -250,6 +256,10 @@ textarea {
   position: sticky;
   top: 118px;
   align-self: start;
+}
+
+.dashboard-grid--cards {
+  align-items: start;
 }
 
 .hero-heading,
@@ -807,12 +817,94 @@ textarea {
   scroll-behavior: auto !important;
 }
 
+.admin-header {
+  padding: 24px 28px;
+}
+
+.admin-sidebar,
+.admin-panel {
+  align-self: start;
+}
+
+.admin-tab-list,
+.admin-tree {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-tab {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--muted-strong);
+  text-align: start;
+}
+
+.admin-tab--active,
+.admin-tab:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-strong);
+}
+
+.admin-panel {
+  display: grid;
+  gap: 22px;
+}
+
+.admin-group-card,
+.admin-fieldset {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.admin-locale-grid,
+.admin-color-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-layout-list {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-fieldset textarea,
+.admin-group-card textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.color-input-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.color-input-row input[type="color"] {
+  width: 100%;
+  min-height: 48px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+}
+
 @media (max-width: 1100px) {
   .dashboard-grid,
   .dashboard-hero,
   .hero-stage,
   .holding-form__layout,
-  .auth-shell {
+  .auth-shell,
+  .admin-shell {
     grid-template-columns: 1fr;
   }
 
@@ -878,7 +970,9 @@ textarea {
   .metric-grid,
   .metric-grid--compact,
   .achievement-grid,
-  .filters-bar {
+  .filters-bar,
+  .admin-locale-grid,
+  .admin-color-grid {
     grid-template-columns: 1fr;
   }
 

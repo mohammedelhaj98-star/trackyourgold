@@ -1,9 +1,9 @@
 import Link from "next/link";
 
-import type { PropsWithChildren } from "react";
+import type { CSSProperties, PropsWithChildren } from "react";
 
 import { logoutAction } from "../lib/actions";
-import { getOtherLocale, messages, type Locale } from "../lib/i18n";
+import { getOtherLocale, type Locale, type MessageCatalog } from "../lib/i18n";
 import type { UiPreferences } from "../lib/preferences";
 import { AppNav } from "./app-nav";
 
@@ -16,15 +16,26 @@ export function Shell({
   children,
   locale,
   me,
-  preferences
-}: PropsWithChildren<{ locale: Locale; me: ShellUser; preferences: UiPreferences }>) {
-  const copy = messages[locale];
+  preferences,
+  copy,
+  themeStyle
+}: PropsWithChildren<{
+  locale: Locale;
+  me: ShellUser;
+  preferences: UiPreferences;
+  copy: MessageCatalog;
+  themeStyle: Record<string, string>;
+}>) {
   const otherLocale = getOtherLocale(locale);
   const boundLogout = logoutAction.bind(null, locale);
   const addHref = me?.defaultVaultId ? `/${locale}/items/new?vaultId=${me.defaultVaultId}` : `/${locale}/items/new`;
 
   return (
-    <div className="chrome" data-reduce-motion={preferences.reduceMotion ? "true" : "false"}>
+    <div
+      className="chrome"
+      data-reduce-motion={preferences.reduceMotion ? "true" : "false"}
+      style={themeStyle as CSSProperties}
+    >
       <header className="topbar">
         <div className="brand-block">
           <Link href={`/${locale}`} className="brand">

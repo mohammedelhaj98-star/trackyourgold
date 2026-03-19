@@ -38,7 +38,7 @@ function isActive(pathname: string, href: string) {
 export function AppNav({ locale, authenticated, labels }: NavProps) {
   const pathname = usePathname();
 
-  if (!authenticated) {
+  if (!authenticated || pathname.includes(`/${locale}/admin`)) {
     return null;
   }
 

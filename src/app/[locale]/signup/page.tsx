@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { signupAction } from "../../../lib/actions";
-import { isLocale, messages } from "../../../lib/i18n";
+import { isLocale } from "../../../lib/i18n";
+import { getRuntimeUi } from "../../../lib/ui-config";
 
 export default async function SignUpPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -10,7 +11,7 @@ export default async function SignUpPage({ params }: { params: Promise<{ locale:
     notFound();
   }
 
-  const copy = messages[locale];
+  const copy = (await getRuntimeUi(locale)).copy;
 
   return (
     <section className="auth-shell">
