@@ -37,14 +37,14 @@ export function Shell({
       style={themeStyle as CSSProperties}
     >
       <header className="topbar">
-        <div className="brand-block">
-          <Link href={`/${locale}`} className="brand">
-            TrackYourGold
-          </Link>
-          <p className="brand-tag">{copy.brandTagline}</p>
-        </div>
+        <div className="topbar-main">
+          <div className="brand-block">
+            <Link href={`/${locale}`} className="brand">
+              TrackYourGold
+            </Link>
+            <p className="brand-tag">{copy.brandTagline}</p>
+          </div>
 
-        <div className="topbar-actions">
           <AppNav
             locale={locale}
             authenticated={Boolean(me)}
@@ -55,29 +55,31 @@ export function Shell({
               settings: copy.nav.settings
             }}
           />
+        </div>
 
-          <div className="topbar-cta">
+        <div className="topbar-actions">
+          <div className="topbar-utility">
             <Link className="locale-link" href={`/${otherLocale}`}>
               {copy.localeSwitch}
             </Link>
 
             {me ? (
               <>
-                <Link className="button button--ghost button--compact" href={addHref as never}>
+                <Link className="button button--compact topbar-primary-action" href={addHref as never}>
                   {copy.nav.addGold}
                 </Link>
                 <form action={boundLogout}>
-                  <button type="submit" className="button button--ghost button--compact">
+                  <button type="submit" className="button button--ghost button--compact button--quiet">
                     {copy.nav.logout}
                   </button>
                 </form>
               </>
             ) : (
               <>
-                <Link className="button button--ghost button--compact" href={`/${locale}/login`}>
+                <Link className="button button--ghost button--compact button--quiet" href={`/${locale}/login`}>
                   {copy.nav.login}
                 </Link>
-                <Link className="button button--compact" href={`/${locale}/signup`}>
+                <Link className="button button--compact topbar-primary-action" href={`/${locale}/signup`}>
                   {copy.nav.signup}
                 </Link>
               </>

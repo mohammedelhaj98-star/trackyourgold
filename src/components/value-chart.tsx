@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { formatDate, formatSignedCurrency } from "../lib/format";
+import { currency, formatDate, formatSignedCurrency } from "../lib/format";
 import type { Locale } from "../lib/i18n";
 import type { ChartPoint } from "../lib/portfolio";
 
@@ -55,12 +55,20 @@ export function ValueChart({ locale, points, emptyLabel }: ValueChartProps) {
   const active = chart.coordinates[activeIndex ?? chart.coordinates.length - 1] ?? chart.coordinates[chart.coordinates.length - 1];
   const baseline = chart.coordinates[0]?.point.totalValueQar ?? active.point.totalValueQar;
   const delta = active.point.totalValueQar - baseline;
+  const deltaPct = baseline ? ((delta / baseline) * 100).toFixed(1) : "0.0";
+  const guideValues = [chart.max, chart.min + (chart.max - chart.min) * 0.5, chart.min];
 
   return (
     <div className="value-chart">
       <div className="value-chart__summary">
-        <strong>{formatDate(active.point.asOf, locale)}</strong>
-        <span>{formatSignedCurrency(delta, locale)}</span>
+        <div className="value-chart__summary-block">
+          <span className="value-chart__meta">{formatDate(active.point.asOf, locale)}</span>
+          <strong className="value-chart__headline">{currency(active.point.totalValueQar, locale)}</strong>
+        </div>
+        <div className="value-chart__summary-block value-chart__summary-block--end">
+          <strong className={delta >= 0 ? "status-good" : "status-bad"}>{formatSignedCurrency(delta, locale)}</strong>
+          <span className="value-chart__meta">{deltaPct}%</span>
+        </div>
       </div>
 
       <svg viewBox={`0 0 ${chart.width} ${chart.height}`} className="value-chart__svg" role="img" aria-label="Value chart">
@@ -70,6 +78,10 @@ export function ValueChart({ locale, points, emptyLabel }: ValueChartProps) {
             <stop offset="100%" stopColor="rgba(240, 202, 131, 0.02)" />
           </linearGradient>
         </defs>
+        {guideValues.map((value, index) => {
+          const y = chart.height - 20 - ((value - chart.min) / (chart.max - chart.min || 1)) * (chart.height - 40);
+          return <line key={`${value}-${index}`} x1="20" x2={chart.width - 20} y1={y} y2={y} className="value-chart__grid-line" />;
+        })}
         <path d={chart.area} fill="url(#chart-fill)" />
         <path d={chart.line} className="value-chart__line" />
         {chart.coordinates.map(({ x, y, point }, index) => (
@@ -86,6 +98,11 @@ export function ValueChart({ locale, points, emptyLabel }: ValueChartProps) {
           </g>
         ))}
       </svg>
+
+      <div className="value-chart__footer">
+        <span>{formatDate(chart.coordinates[0]?.point.asOf ?? active.point.asOf, locale)}</span>
+        <span>{formatDate(chart.coordinates[chart.coordinates.length - 1]?.point.asOf ?? active.point.asOf, locale)}</span>
+      </div>
     </div>
   );
 }

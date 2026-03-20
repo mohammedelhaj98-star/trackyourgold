@@ -51,6 +51,7 @@ export function AppNav({ locale, authenticated, labels }: NavProps) {
             <Link
               key={item.key}
               className={`nav-link ${isActive(pathname, href) ? "nav-link--active" : ""}`}
+              aria-current={isActive(pathname, href) ? "page" : undefined}
               href={href as never}
             >
               {labels[item.key]}
@@ -66,6 +67,7 @@ export function AppNav({ locale, authenticated, labels }: NavProps) {
             <Link
               key={item.key}
               className={`bottom-nav__item ${isActive(pathname, href) ? "bottom-nav__item--active" : ""}`}
+              aria-current={isActive(pathname, href) ? "page" : undefined}
               href={href as never}
             >
               <span className="bottom-nav__label">{labels[item.key]}</span>
